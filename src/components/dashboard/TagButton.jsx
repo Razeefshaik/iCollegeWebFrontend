@@ -1,7 +1,8 @@
-export default function TagButton({ text }) {
+export default function TagButton({ text, onClick }) {
   return (
     <button
       type="button"
+      onClick={onClick}
       className="
         bg-gray-100 dark:bg-gray-800
         hover:bg-gray-200 dark:hover:bg-gray-700

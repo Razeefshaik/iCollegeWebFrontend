@@ -1,6 +1,7 @@
-export default function ActionLink({ text, className = "" }) {
+export default function ActionLink({ text, className = "", onClick }) {
   return (
     <a
+      onClick={onClick}
       className={`
         inline-flex items-center
         text-primary hover:text-red-700

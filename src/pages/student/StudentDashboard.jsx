@@ -1,12 +1,15 @@
 import StudentNavbar from "../../components/layout/StudentNavbar";
 import StudentFooter from "../../components/layout/StudentFooter";
 import StudentBottomNav from "../../components/layout/StudentBottomNav";
+import { useNavigate } from "react-router-dom";
 
 import DashboardCard from "../../components/dashboard/DashboardCard";
 import TagButton from "../../components/dashboard/TagButton";
 import ActionLink from "../../components/dashboard/ActionLink";
 
 export default function StudentDashboard() {
+  const navigate = useNavigate();
+
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen font-display text-gray-800 dark:text-gray-200 pb-24 md:pb-10">
 
@@ -37,8 +40,14 @@ export default function StudentDashboard() {
             description="Report issues regarding infrastructure, mess, or academics. Track status & upvote."
           >
             <div className="flex flex-wrap gap-2">
-              <TagButton text="New" />
-              <TagButton text="Track" />
+              <TagButton
+                text="New"
+                onClick={() => navigate("/student/new_complaints")}
+              />
+              <TagButton
+                text="Track"
+                onClick={() => navigate("/student/complaints_feed")}
+              />
             </div>
           </DashboardCard>
 
@@ -49,7 +58,10 @@ export default function StudentDashboard() {
             title="Announcements"
             description="Latest news from the student council, administration, and clubs."
           >
-            <ActionLink text="View Feed" />
+            <ActionLink
+              text="View Feed"
+              onClick={() => navigate("/student/announcements")}
+            />
           </DashboardCard>
 
           {/* Opinions */}
