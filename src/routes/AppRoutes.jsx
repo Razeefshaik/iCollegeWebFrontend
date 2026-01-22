@@ -10,6 +10,7 @@ import Profile from "../pages/student/Profile";
 import Complaints from "../pages/student/new_complaints";
 import ComplaintsFeed from "../pages/student/ComplaintsFeed";
 import Announcements from "../pages/student/Announcements";
+import OpinionPolls from "../pages/student/OpinionPolls";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import ProtectedRoute from "./ProtectedRoute";
 
@@ -75,6 +76,15 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <Announcements />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/student/opinion-polls"
+        element={
+          <ProtectedRoute>
+            <OpinionPolls />
           </ProtectedRoute>
         }
       />

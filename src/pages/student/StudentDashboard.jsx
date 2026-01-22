@@ -71,12 +71,11 @@ export default function StudentDashboard() {
             title="Opinions"
             description="Vote on upcoming events like DJ Night, Cafeteria Menu, and more."
           >
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-2 overflow-hidden">
-              <div className="bg-green-500 h-2.5 rounded-full w-[70%]" />
-            </div>
-            <span className="text-xs text-gray-400 dark:text-gray-500 font-medium">
-              2 active polls
-            </span>
+            <ActionLink
+              text="View Polls"
+              onClick={() => navigate("/student/opinion-polls")}
+              className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300"
+            />
           </DashboardCard>
 
           {/* Contributions */}
