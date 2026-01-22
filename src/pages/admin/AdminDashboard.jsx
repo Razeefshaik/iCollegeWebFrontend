@@ -134,9 +134,8 @@ export default function AdminDashboard() {
                   <ActionCard
                     icon="poll"
                     label="Post Opinion\nPoll"
-
-                     color="purple"
-                    onClick={() => console.log("Post Opinion Poll")}
+                    color="purple"
+                    onClick={() => navigate("/admin/new-opinion-poll")}
                   />
                   <ActionCard
                     icon="emoji_events"

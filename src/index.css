@@ -9,3 +9,20 @@ body {
 .serif-heading {
   font-family: "Playfair Display", serif;
 }
+
+/* Toggle Switch Styles */
+.toggle-checkbox:checked {
+  right: 0;
+  border-color: #1A61F2;
+}
+
+.toggle-checkbox:checked + .toggle-label {
+  background-color: #1A61F2;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  border-color: #1A61F2 !important;
+  box-shadow: 0 0 0 2px rgba(26, 97, 242, 0.1);
+}

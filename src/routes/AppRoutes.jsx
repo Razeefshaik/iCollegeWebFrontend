@@ -13,6 +13,7 @@ import Announcements from "../pages/student/Announcements";
 import OpinionPolls from "../pages/student/OpinionPolls";
 import PollDetail from "../pages/student/PollDetail";
 import AdminDashboard from "../pages/admin/AdminDashboard";
+import NewOpinionPoll from "../pages/admin/NewOpinionPoll";
 import ProtectedRoute from "./ProtectedRoute";
 
 export default function AppRoutes() {
@@ -105,6 +106,15 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/new-opinion-poll"
+        element={
+          <ProtectedRoute>
+            <NewOpinionPoll />
           </ProtectedRoute>
         }
       />
