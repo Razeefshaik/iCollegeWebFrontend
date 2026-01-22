@@ -203,7 +203,10 @@ export default function OpinionPolls() {
                           {poll.participation}
                         </p>
                       </div>
-                      <button className="bg-primary hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-blue-600/20">
+                      <button
+                        onClick={() => navigate(`/student/opinion-polls/${poll.id}`)}
+                        className="bg-primary hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-blue-600/20"
+                      >
                         Vote Now
                       </button>
                     </div>

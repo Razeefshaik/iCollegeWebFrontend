@@ -5,3 +5,7 @@
 body {
   font-family: "Inter", sans-serif;
 }
+
+.serif-heading {
+  font-family: "Playfair Display", serif;
+}

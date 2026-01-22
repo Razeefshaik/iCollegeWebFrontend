@@ -11,6 +11,7 @@ import Complaints from "../pages/student/new_complaints";
 import ComplaintsFeed from "../pages/student/ComplaintsFeed";
 import Announcements from "../pages/student/Announcements";
 import OpinionPolls from "../pages/student/OpinionPolls";
+import PollDetail from "../pages/student/PollDetail";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import ProtectedRoute from "./ProtectedRoute";
 
@@ -85,6 +86,15 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <OpinionPolls />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/student/opinion-polls/:id"
+        element={
+          <ProtectedRoute>
+            <PollDetail />
           </ProtectedRoute>
         }
       />
