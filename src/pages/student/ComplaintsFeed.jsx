@@ -1,69 +1,212 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  getAllComplaints,
+  getMyComplaints,
+  toggleUpvote,
+  CATEGORY_DISPLAY,
+} from "../../services/api";
 
 export default function ComplaintsFeed() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("public");
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [complaints, setComplaints] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [upvotingIds, setUpvotingIds] = useState(new Set());
 
-  // Sample complaints data
-  const complaints = [
-    {
-      id: 1,
-      author: "Anonymous",
-      authorInitials: null,
-      authorIcon: "person",
-      timeAgo: "2h ago",
-      category: "Academics",
-      categoryColor: "blue",
-      title: "Library hours extension",
-      description:
-        "We need extended library hours during finals week to accommodate late-night study sessions. Currently closing at 10 PM is too early for most of us who study late. Many students end up studying in the common rooms which are noisy.",
-      media: [{ type: "image" }],
-      likes: 45,
-      comments: 8,
-      isLiked: false,
-      status: "In Progress",
-      statusColor: "orange",
-    },
-    {
-      id: 2,
-      author: "Rahul G.",
-      authorInitials: null,
-      authorImage:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuBY4tiBAXi-5oGaALdK7ItJYBTIpbNX-xAu3C_xcU6DUoby0dr2ghrEDTseWGp31AHBJ4P_E70eM1CN8Udz-hxqvlhFLTKR8iGLdMq6LM-8uAOo5yG7kX52iqEA9qXTt4if86xb0nptjAMgDzoah8dZJJjbRuSXVGsFM3zGolikJ-EdSBYCaOjgKk66-Ss5cEnkxlO3Jm8tcF9Sm7SvQJh_wUgk_mh9QQsvjBwkf4CT27uGVaKqA-PdNAguABRbvwQqTO3aaQ8zbEc8",
-      timeAgo: "5h ago",
-      category: "Facilities",
-      categoryColor: "green",
-      title: "Cafeteria daily special pricing",
-      description:
-        "The new cafeteria menu is great, but the pricing for the daily special is a bit steep compared to standard meals. Can this be reviewed? We are students on a budget and a 40% hike is difficult to manage.",
-      media: [{ type: "image" }, { type: "image" }],
-      likes: 12,
-      comments: 3,
-      isLiked: true,
-      status: "Resolved",
-      statusColor: "green",
-    },
-    {
-      id: 3,
-      author: "Ananya S.",
-      authorInitials: "AS",
-      timeAgo: "1d ago",
-      category: "Events",
-      categoryColor: "purple",
-      title: "Sound system echo at Cultural Night",
-      description:
-        "Cultural night was amazing but the sound system needs serious work for next year. It was echoing in the back rows making it hard to hear performances. This has been an issue for the last two years.",
-      media: [{ type: "video" }],
-      likes: 89,
-      comments: 15,
-      isLiked: false,
-      status: "Pending",
-      statusColor: "gray",
-    },
-  ];
+  // Fetch complaints based on active tab
+  useEffect(() => {
+    fetchComplaints();
+  }, [activeTab, page]);
+
+  async function fetchComplaints() {
+    setLoading(true);
+    setError("");
+
+    try {
+      let data;
+      console.log("Fetching complaints for tab:", activeTab);
+      if (activeTab === "my") {
+        console.log("Calling getMyComplaints()");
+        data = await getMyComplaints();
+        setHasMore(false); // My complaints doesn't have pagination
+      } else {
+        console.log("Calling getAllComplaints() with page:", page);
+        data = await getAllComplaints(page, 10);
+        setHasMore(data.length === 10); // If we got 10 items, there might be more
+      }
+
+      // Log the response for debugging
+      console.log("API Response:", data);
+      console.log("Is Array?", Array.isArray(data));
+      console.log("Type:", typeof data);
+      console.log("Data length:", data?.length);
+      if (data && data.length > 0) {
+        console.log("First complaint object:", JSON.stringify(data[0], null, 2));
+        console.log("All complaint keys:", Object.keys(data[0] || {}));
+      } else {
+        console.log("⚠️ No complaints in response - array is empty");
+      }
+
+      // Ensure data is an array
+      if (!Array.isArray(data)) {
+        console.error("API returned non-array data:", data);
+        setError(
+          `Invalid response format from server. Expected array, got: ${typeof data}`
+        );
+        setComplaints([]);
+        return;
+      }
+
+      // Transform API response to match UI format
+      const transformedComplaints = data.map((complaint) => {
+        // Handle different possible field names from API
+        const id = complaint.complaintId || complaint.id || complaint.complaint_id;
+        const author = complaint.createdBy || complaint.author || complaint.userName || "Anonymous";
+        const createdAt = complaint.createdAt || complaint.created_at || complaint.date;
+        const category = complaint.category || "OTHER";
+        const status = complaint.status || "PENDING";
+        
+        return {
+          id: id,
+          author: author,
+          authorInitials: author && author !== "Anonymous"
+            ? author
+                .split(" ")
+                .map((n) => n[0])
+                .join("")
+                .toUpperCase()
+            : null,
+          timeAgo: createdAt ? formatTimeAgo(createdAt) : "Recently",
+          category: CATEGORY_DISPLAY[category] || category,
+          categoryColor: getCategoryColor(category),
+          title: complaint.title || "Untitled",
+          description: complaint.description || "",
+          imageUrl: complaint.imageUrl || complaint.image_url || null,
+          likes: complaint.upvotes || complaint.upvotes || 0,
+          comments: 0,
+          isLiked: false,
+          status: status,
+          statusColor: getStatusColor(status),
+        };
+      });
+
+      console.log("All transformed complaints:", transformedComplaints);
+      console.log("Setting complaints state with:", transformedComplaints.length, "items");
+
+      if (page === 0) {
+        setComplaints(transformedComplaints);
+      } else {
+        setComplaints((prev) => [...prev, ...transformedComplaints]);
+      }
+    } catch (err) {
+      console.error("Error fetching complaints:", err);
+      setError(err.message || "Failed to load complaints. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function formatTimeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+
+    if (diffInSeconds < 60) return "just now";
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return date.toLocaleDateString();
+  }
+
+  function getCategoryColor(category) {
+    const colorMap = {
+      INFRASTRUCTURE: "green",
+      ACADEMIC: "blue",
+      HOSTEL: "purple",
+      MESS: "orange",
+      OTHER: "purple",
+    };
+    return colorMap[category] || "blue";
+  }
+
+  function getStatusColor(status) {
+    const colorMap = {
+      PENDING: "gray",
+      IN_PROGRESS: "orange",
+      RESOLVED: "green",
+    };
+    return colorMap[status] || "gray";
+  }
+
+  async function handleUpvote(complaintId, currentLiked) {
+    if (upvotingIds.has(complaintId)) return; // Prevent double-click
+
+    setUpvotingIds((prev) => new Set(prev).add(complaintId));
+
+    try {
+      const updatedComplaint = await toggleUpvote(complaintId);
+
+      // Update the complaint in the list
+      setComplaints((prev) =>
+        prev.map((c) =>
+          c.id === complaintId
+            ? {
+                ...c,
+                likes: updatedComplaint.upvotes || 0,
+                isLiked: !currentLiked, // Toggle liked state
+              }
+            : c
+        )
+      );
+    } catch (err) {
+      console.error("Error toggling upvote:", err);
+      alert("Failed to update upvote. Please try again.");
+    } finally {
+      setUpvotingIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(complaintId);
+        return newSet;
+      });
+    }
+  }
+
+  function handleTabChange(tab) {
+    setActiveTab(tab);
+    setPage(0); // Reset to first page when switching tabs
+    setComplaints([]); // Clear existing complaints
+  }
+
+  function handleLoadMore() {
+    if (hasMore && !loading) {
+      setPage((prev) => prev + 1);
+    }
+  }
+
+  // Filter complaints by category and search
+  const filteredComplaints = complaints.filter((complaint) => {
+    const matchesCategory =
+      activeCategory === "all" ||
+      complaint.category.toLowerCase() === activeCategory.toLowerCase();
+    const matchesSearch =
+      !searchQuery.trim() ||
+      complaint.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      complaint.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
+
+  // Debug logging
+  useEffect(() => {
+    console.log("Total complaints:", complaints.length);
+    console.log("Filtered complaints:", filteredComplaints.length);
+    console.log("Active category:", activeCategory);
+    console.log("Search query:", searchQuery);
+  }, [complaints, filteredComplaints, activeCategory, searchQuery]);
 
   function handleBack() {
     navigate("/student/dashboard");
@@ -126,7 +269,7 @@ export default function ComplaintsFeed() {
           {/* Tabs */}
           <div className="bg-gray-200/50 dark:bg-gray-800/50 p-1.5 rounded-xl flex gap-2 mb-6 max-w-lg">
             <button
-              onClick={() => setActiveTab("public")}
+              onClick={() => handleTabChange("public")}
               className={`flex-1 py-2 px-4 rounded-lg shadow-sm text-sm text-center transition-all ${
                 activeTab === "public"
                   ? "bg-white dark:bg-card-dark text-primary font-semibold"
@@ -136,7 +279,7 @@ export default function ComplaintsFeed() {
               Public Feed
             </button>
             <button
-              onClick={() => setActiveTab("my")}
+              onClick={() => handleTabChange("my")}
               className={`flex-1 py-2 px-4 rounded-lg shadow-sm text-sm text-center transition-all ${
                 activeTab === "my"
                   ? "bg-white dark:bg-card-dark text-primary font-semibold"
@@ -176,9 +319,32 @@ export default function ComplaintsFeed() {
             )}
           </div>
 
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+              <p className="text-red-600 dark:text-red-400 text-sm font-medium">
+                {error}
+              </p>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading && complaints.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-slate-500 dark:text-slate-400">Loading complaints...</p>
+            </div>
+          )}
+
           {/* Complaints Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-12">
-            {complaints.map((complaint) => (
+            {filteredComplaints.length === 0 && !loading && (
+              <div className="col-span-2 text-center py-12">
+                <p className="text-slate-500 dark:text-slate-400">
+                  No complaints found.
+                </p>
+              </div>
+            )}
+            {filteredComplaints.map((complaint) => (
               <div
                 key={complaint.id}
                 className="bg-card-light dark:bg-card-dark rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-col gap-4 hover:shadow-md transition-shadow"
@@ -237,48 +403,37 @@ export default function ComplaintsFeed() {
                   <p className="text-text-sub-light dark:text-text-sub-dark text-sm leading-relaxed mb-4">
                     {complaint.description}
                   </p>
-                  {complaint.media.length === 1 ? (
-                    complaint.media[0].type === "video" ? (
-                      <div className="w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center text-gray-400 relative overflow-hidden group cursor-pointer">
-                        <div className="absolute inset-0 bg-black/5 group-hover:bg-black/10 transition-colors"></div>
-                        <div className="w-12 h-12 rounded-full bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm flex items-center justify-center shadow-lg transform group-hover:scale-110 transition-transform">
-                          <span className="material-icons-round text-2xl text-gray-700 dark:text-gray-200 ml-1">
-                            play_arrow
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center text-gray-400">
+                  {complaint.imageUrl ? (
+                    <div className="w-full h-48 rounded-xl overflow-hidden">
+                      <img
+                        src={complaint.imageUrl}
+                        alt={complaint.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = "none";
+                          e.target.nextSibling.style.display = "flex";
+                        }}
+                      />
+                      <div className="w-full h-48 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center text-gray-400 hidden">
                         <span className="material-icons-round text-4xl">
                           image
                         </span>
                       </div>
-                    )
-                  ) : (
-                    <div className="grid grid-cols-2 gap-2">
-                      {complaint.media.map((item, idx) => (
-                        <div
-                          key={idx}
-                          className="w-full h-32 bg-gray-100 dark:bg-gray-800 rounded-xl flex items-center justify-center text-gray-400"
-                        >
-                          <span className="material-icons-round text-3xl">
-                            image
-                          </span>
-                        </div>
-                      ))}
                     </div>
-                  )}
+                  ) : null}
                 </div>
 
                 {/* Footer */}
                 <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700 mt-auto">
                   <div className="flex items-center gap-4">
                     <button
+                      onClick={() => handleUpvote(complaint.id, complaint.isLiked)}
+                      disabled={upvotingIds.has(complaint.id)}
                       className={`flex items-center gap-1.5 text-sm font-medium group transition-colors ${
                         complaint.isLiked
                           ? "text-primary"
                           : "text-text-sub-light dark:text-text-sub-dark hover:text-primary"
-                      }`}
+                      } ${upvotingIds.has(complaint.id) ? "opacity-50 cursor-not-allowed" : ""}`}
                     >
                       <span
                         className={`material-icons-round ${
@@ -303,25 +458,47 @@ export default function ComplaintsFeed() {
                         : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-600"
                     }`}
                   >
-                    {complaint.status === "In Progress" && (
+                    {complaint.status === "IN_PROGRESS" && (
                       <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span>
                     )}
-                    {complaint.status === "Resolved" && (
+                    {complaint.status === "RESOLVED" && (
                       <span className="material-icons-round text-sm">
                         check_circle
                       </span>
                     )}
-                    {complaint.status === "Pending" && (
+                    {complaint.status === "PENDING" && (
                       <span className="material-icons-round text-sm">
                         hourglass_empty
                       </span>
                     )}
-                    {complaint.status}
+                    {complaint.status === "IN_PROGRESS"
+                      ? "In Progress"
+                      : complaint.status === "RESOLVED"
+                      ? "Resolved"
+                      : complaint.status}
                   </span>
                 </div>
               </div>
             ))}
           </div>
+
+          {/* Load More Button */}
+          {hasMore && activeTab === "public" && !loading && (
+            <div className="text-center py-6">
+              <button
+                onClick={handleLoadMore}
+                className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Load More
+              </button>
+            </div>
+          )}
+
+          {loading && complaints.length > 0 && (
+            <div className="text-center py-6">
+              <p className="text-slate-500 dark:text-slate-400">Loading more...</p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

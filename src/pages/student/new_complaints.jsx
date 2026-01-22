@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { createComplaint, CATEGORY_MAP } from "../../services/api";
 
 export default function Complaints() {
   const navigate = useNavigate();
@@ -11,6 +12,8 @@ export default function Complaints() {
     photo: null,
   });
   const [dragActive, setDragActive] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   function handleBack() {
     navigate("/student/dashboard");
@@ -43,10 +46,53 @@ export default function Complaints() {
     }
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    console.log("Complaint submitted:", form);
-    // Handle submission logic here
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      // Validate form
+      if (!form.title.trim() || !form.description.trim() || !form.category) {
+        setError("Please fill in all required fields");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Map category to backend format
+      const backendCategory = CATEGORY_MAP[form.category];
+      if (!backendCategory) {
+        setError("Invalid category selected");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Prepare complaint data
+      const complaintData = {
+        title: form.title.trim(),
+        description: form.description.trim(),
+        category: backendCategory,
+        imageUrl: "placeholder-image-url", // Random string for now
+      };
+
+      // Log the request for debugging
+      console.log("Submitting complaint:", complaintData);
+      console.log("Token exists:", !!localStorage.getItem("token"));
+
+      const response = await createComplaint(complaintData);
+      
+      console.log("Complaint created successfully:", response);
+      
+      // Success - navigate back to complaints feed and refresh
+      navigate("/student/complaints_feed", { replace: true });
+      // Force a page reload to refresh the complaints list
+      window.location.reload();
+    } catch (err) {
+      console.error("Error creating complaint:", err);
+      setError(err.message || "Failed to submit complaint. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -86,6 +132,14 @@ export default function Complaints() {
         </div>
 
         <hr className="border-slate-300 dark:border-slate-700 mb-10 opacity-60" />
+
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+            <p className="text-red-600 dark:text-red-400 text-sm font-medium">
+              {error}
+            </p>
+          </div>
+        )}
 
         <form action="#" className="space-y-8" method="POST" onSubmit={handleSubmit}>
           <div className="space-y-3">
@@ -217,10 +271,11 @@ export default function Complaints() {
           <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
             <div className="flex flex-col md:flex-row md:justify-end">
               <button
-                className="w-full md:w-auto md:min-w-[240px] flex justify-center items-center py-4 px-8 border border-transparent rounded-xl shadow-lg shadow-blue-500/20 text-lg font-bold text-white bg-primary hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200 transform hover:-translate-y-0.5"
+                className="w-full md:w-auto md:min-w-[240px] flex justify-center items-center py-4 px-8 border border-transparent rounded-xl shadow-lg shadow-blue-500/20 text-lg font-bold text-white bg-primary hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200 transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                 type="submit"
+                disabled={isSubmitting}
               >
-                Submit Complaint
+                {isSubmitting ? "Submitting..." : "Submit Complaint"}
               </button>
             </div>
           </div>
