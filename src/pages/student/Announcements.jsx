@@ -8,6 +8,11 @@ export default function Announcements() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
 
+  function goToDetails(id) {
+    navigate(`/student/announcements/${id}`);
+  }
+
+
   // Pinned announcement
   const pinnedAnnouncement = {
     id: 1,
@@ -159,12 +164,16 @@ export default function Announcements() {
                 <p className="text-gray-200 text-base md:text-lg line-clamp-2 md:line-clamp-none max-w-3xl mb-6">
                   {pinnedAnnouncement.description}
                 </p>
-                <button className="inline-flex items-center text-sm font-semibold text-white hover:text-blue-200 transition-colors bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg backdrop-blur-sm">
+                <button
+                  onClick={() => goToDetails(pinnedAnnouncement.id)}
+                  className="inline-flex items-center text-sm font-semibold text-white hover:text-blue-200 transition-colors bg-white/10 hover:bg-white/20 px-4 py-2 rounded-lg backdrop-blur-sm"
+                >
                   Read Details{" "}
                   <span className="material-icons-round text-base ml-2">
                     arrow_forward
                   </span>
                 </button>
+
               </div>
             </div>
           </div>
@@ -246,12 +255,16 @@ export default function Announcements() {
                   </div>
                 )}
                 <div className="mt-auto pt-2 border-t border-gray-100 dark:border-gray-700/50">
-                  <span className="inline-flex items-center text-sm font-semibold text-primary w-full justify-end">
+                  <span
+                    onClick={() => goToDetails(announcement.id)}
+                    className="inline-flex items-center text-sm font-semibold text-primary w-full justify-end cursor-pointer"
+                  >
                     Read Details{" "}
                     <span className="material-icons-round text-base ml-1 group-hover:translate-x-1 transition-transform">
                       chevron_right
                     </span>
                   </span>
+
                 </div>
               </div>
             ))}

@@ -15,6 +15,9 @@ import PollDetail from "../pages/student/PollDetail";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import NewOpinionPoll from "../pages/admin/NewOpinionPoll";
 import ProtectedRoute from "./ProtectedRoute";
+import AnnouncementDetail from "../pages/student/AnnouncementDetail";
+import NewAnnouncement from "../pages/admin/NewAnnouncement";
+
 
 export default function AppRoutes() {
   return (
@@ -83,6 +86,15 @@ export default function AppRoutes() {
       />
 
       <Route
+        path="/student/announcements/:id"
+        element={
+          <ProtectedRoute>
+            <AnnouncementDetail />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/student/opinion-polls"
         element={
           <ProtectedRoute>
@@ -115,6 +127,15 @@ export default function AppRoutes() {
         element={
           <ProtectedRoute>
             <NewOpinionPoll />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route 
+        path="/admin/new-announcement" 
+        element={
+          <ProtectedRoute>
+            <NewAnnouncement />
           </ProtectedRoute>
         }
       />

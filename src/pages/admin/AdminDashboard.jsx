@@ -119,11 +119,12 @@ export default function AdminDashboard() {
                   Admin Actions
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {/* UPDATED: Post Announcement Button */}
                   <ActionCard
                     icon="campaign"
                     label="Post\nAnnouncement"
                     color="blue"
-                    onClick={() => console.log("Post Announcement")}
+                    onClick={() => navigate("/admin/new-announcement")}
                   />
                   <ActionCard
                     icon="gavel"
@@ -305,4 +306,3 @@ function QuickAccessItem({ icon, title, description, color, onClick }) {
     </button>
   );
 }
-
