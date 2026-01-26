@@ -11,8 +11,7 @@ export default function AnnouncementDetail() {
       title: "Annual Gymkhana Sports Meet 2024",
       category: "Sports",
       priority: "Urgent",
-      image:
-        "https://lh3.googleusercontent.com/aida-public/AB6AXuCVD3L7qYuj3E2Lo7RegHBNhMTq_yylR5v2wGFV4nyt_rP74ErxelcJC_7Mg2-q-2Er7vwTkxJr_7R09wOZqdDWvOVAb98ygBqVdvG3erIu2esqZeL4tqdGPNovzNcd31OCAU5-imM9UjzxYd4H2eMC-0VU0xPaDsLwN48BMFGMkFCrVJTZRAIs81rABWzh62c_qQ3GvSWeUWwEWq6Eh3-m34ZskPvTV-hZUOG3V02DINGZ5z9tCuQlQTVuMv4YKiKMMp3omjmgLI99",
+      image: "https://lh3.googleusercontent.com/aida-public/AB6AXuCVD3L7qYuj3E2Lo7RegHBNhMTq_yylR5v2wGFV4nyt_rP74ErxelcJC_7Mg2-q-2Er7vwTkxJr_7R09wOZqdDWvOVAb98ygBqVdvG3erIu2esqZeL4tqdGPNovzNcd31OCAU5-imM9UjzxYd4H2eMC-0VU0xPaDsLwN48BMFGMkFCrVJTZRAIs81rABWzh62c_qQ3GvSWeUWwEWq6Eh3-m34ZskPvTV-hZUOG3V02DINGZ5z9tCuQlQTVuMv4YKiKMMp3omjmgLI99",
       publishedBy: "Admin Office",
       publishedAt: "October 24, 2023 • 10:45 AM",
       content: [
@@ -26,20 +25,14 @@ export default function AnnouncementDetail() {
     },
   ];
 
-  const announcement = announcements.find(
-    (a) => String(a.id) === id
-  );
+  const announcement = announcements.find((a) => String(a.id) === id);
 
   if (!announcement) {
-    return (
-      <p className="p-6 text-slate-500">
-        Announcement not found
-      </p>
-    );
+    return <p className="p-6 text-slate-500">Announcement not found</p>;
   }
 
   return (
-    <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-200">
+    <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 transition-colors duration-200 min-h-screen flex flex-col">
       {/* HEADER */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
         <div className="w-full px-4 sm:px-8 lg:px-12">
@@ -54,10 +47,8 @@ export default function AnnouncementDetail() {
             </button>
 
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary rounded flex items-center justify-center text-white">
-                <span className="material-symbols-outlined text-sm">
-                  school
-                </span>
+              <div className="w-8 h-8 bg-[#EF231C] rounded flex items-center justify-center text-white">
+                <span className="material-symbols-outlined text-sm">school</span>
               </div>
               <h1 className="text-xl font-bold text-slate-800 dark:text-slate-200 tracking-tight">
                 Announcement Details
@@ -67,8 +58,8 @@ export default function AnnouncementDetail() {
         </div>
       </header>
 
-      {/* HERO */}
-      <main className="w-full">
+      {/* HERO & CONTENT */}
+      <main className="flex-grow w-full">
         <div className="w-full h-[50vh] min-h-[400px] relative overflow-hidden">
           <img
             src={announcement.image}
@@ -100,15 +91,12 @@ export default function AnnouncementDetail() {
           </div>
         </div>
 
-        {/* CONTENT */}
         <div className="w-full px-4 sm:px-8 lg:px-16 py-12">
           <article className="w-full">
             {/* META */}
-            <div className="flex items-center gap-4 mb-10 pb-8 border-b border-slate-200">
-              <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
-                <span className="material-symbols-outlined">
-                  account_balance
-                </span>
+            <div className="flex items-center gap-4 mb-10 pb-8 border-b border-slate-200 dark:border-slate-800">
+              <div className="w-14 h-14 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400">
+                <span className="material-symbols-outlined">account_balance</span>
               </div>
               <div>
                 <p className="text-lg font-semibold">
@@ -120,46 +108,43 @@ export default function AnnouncementDetail() {
               </div>
             </div>
 
+            {/* MAIN GRID */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-              {/* LEFT CONTENT */}
-              <div className="lg:col-span-2 text-[18px] leading-[1.9] text-slate-600 space-y-8">
+              <div className="lg:col-span-2 text-[18px] leading-[1.9] text-slate-600 dark:text-slate-300 space-y-8">
                 <p>
                   We are thrilled to announce the upcoming{" "}
-                  <span className="text-blue-600 font-semibold">
+                  <span className="text-blue-600 dark:text-blue-400 font-semibold">
                     {announcement.title}
                   </span>
-                  . This year's event promises to be our biggest yet,
-                  featuring over 15 competitive disciplines including track
-                  and field, swimming, basketball, and table tennis.
+                  . This year's event promises to be our biggest yet, featuring
+                  over 15 competitive disciplines including track and field,
+                  swimming, basketball, and table tennis.
                 </p>
 
                 <p>
                   The meet is scheduled to take place from{" "}
-                  <span className="font-semibold text-slate-900">
+                  <span className="font-semibold text-slate-900 dark:text-slate-100">
                     November 15th to November 20th
                   </span>
-                  . All undergraduate and postgraduate students are eligible
-                  to participate. The event aims to foster a spirit of healthy
-                  competition and sportsmanship among the campus community.
+                  . All undergraduate and postgraduate students are eligible to
+                  participate. The event aims to foster a spirit of healthy competition 
+                  and sportsmanship among the campus community.
                 </p>
 
                 <p>
                   Detailed rules and regulations for each sport have been
-                  attached below. Please ensure you review the eligibility
-                  criteria before registering through the portal. For any
-                  queries, reach out to the Sports Secretary at the Gymkhana
-                  office.
+                  attached below. Please ensure you review the eligibility 
+                  criteria before registering through the portal.
                 </p>
               </div>
 
-              {/* RIGHT SIDEBAR */}
               <div className="lg:col-span-1">
-                <div className="sticky top-24 p-8 bg-blue-50 border border-blue-100 rounded-2xl shadow-sm">
+                <div className="sticky top-24 p-8 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/50 rounded-2xl shadow-sm">
                   <div className="flex items-center gap-3 mb-8">
-                    <span className="material-symbols-outlined text-blue-600 text-3xl font-light">
+                    <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-3xl font-light">
                       calendar_month
                     </span>
-                    <h3 className="text-2xl font-bold text-slate-900">
+                    <h3 className="text-2xl font-bold text-slate-900 dark:text-white">
                       Key Information
                     </h3>
                   </div>
@@ -181,17 +166,15 @@ export default function AnnouncementDetail() {
                   </div>
 
                   <button className="mt-10 w-full py-4 bg-[#2563EB] hover:bg-blue-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 shadow-lg shadow-blue-200 transition-all">
-                    <span className="material-symbols-outlined text-lg">
-                      edit
-                    </span>
+                    <span className="material-symbols-outlined text-lg">edit</span>
                     Edit Details
                   </button>
                 </div>
               </div>
-            </div>
+            </div> {/* END OF MAIN GRID */}
 
-            {/* SEPARATION LINE */}
-            <hr className="my-16 border-slate-100 dark:border-slate-800" />
+            {/* SEPARATION LINE - Outsourced from Grid for exact spacing */}
+            <hr className="mt-20 mb-16 border-t border-slate-200 dark:border-slate-800/60" />
 
             {/* ATTACHMENTS SECTION */}
             <div className="mt-8">
@@ -199,14 +182,12 @@ export default function AnnouncementDetail() {
                 <span className="material-symbols-outlined text-4xl -rotate-45 font-light">
                   attachment
                 </span>
-                <h3 className="text-4xl font-bold tracking-tight">
-                  Attachments
-                </h3>
+                <h3 className="text-4xl font-bold tracking-tight">Attachments</h3>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* PDF Card */}
-                <div className="flex items-center justify-between p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm hover:bg-[#F8FAFC] hover:border-blue-200 transition-all cursor-pointer group">
+                <div className="flex items-center justify-between p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm hover:bg-[#F8FAFC] dark:hover:bg-slate-800 hover:border-blue-200 transition-all cursor-pointer group">
                   <div className="flex items-center gap-6">
                     <div className="w-16 h-16 bg-[#FFF1F1] dark:bg-red-950/30 rounded-2xl flex items-center justify-center">
                       <span className="material-symbols-outlined text-[#F44336] text-3xl">
@@ -228,7 +209,7 @@ export default function AnnouncementDetail() {
                 </div>
 
                 {/* WORD Card */}
-                <div className="flex items-center justify-between p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm hover:bg-[#F8FAFC] hover:border-blue-200 transition-all cursor-pointer group">
+                <div className="flex items-center justify-between p-6 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-3xl shadow-sm hover:bg-[#F8FAFC] dark:hover:bg-slate-800 hover:border-blue-200 transition-all cursor-pointer group">
                   <div className="flex items-center gap-6">
                     <div className="w-16 h-16 bg-[#F0F7FF] dark:bg-blue-950/30 rounded-2xl flex items-center justify-center">
                       <span className="material-symbols-outlined text-[#2196F3] text-3xl">
@@ -253,21 +234,39 @@ export default function AnnouncementDetail() {
           </article>
         </div>
       </main>
+
+      {/* FOOTER */}
+      <footer className="mt-20 py-16 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+        <div className="w-full px-4 sm:px-8 lg:px-16 flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-[#EF231C] rounded-lg flex items-center justify-center text-white">
+              <span className="material-symbols-outlined">school</span>
+            </div>
+            <span className="text-xl font-bold text-slate-900 dark:text-white">
+              Campus Connect
+            </span>
+          </div>
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium text-center md:text-left">
+            © 2024 Campus Administration Office. All rights reserved.
+          </p>
+          <div className="flex gap-10">
+            <a className="text-sm font-bold text-slate-500 hover:text-[#EF231C] transition-colors uppercase tracking-widest" href="#">Support</a>
+            <a className="text-sm font-bold text-slate-500 hover:text-[#EF231C] transition-colors uppercase tracking-widest" href="#">Guidelines</a>
+            <a className="text-sm font-bold text-slate-500 hover:text-[#EF231C] transition-colors uppercase tracking-widest" href="#">Privacy</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
 
 function Info({ label, value, danger }) {
   return (
-    <div className="pb-6 border-b border-blue-100 last:border-b-0">
-      <span className="text-xs tracking-widest uppercase text-slate-500">
+    <div className="pb-6 border-b border-blue-100 dark:border-blue-800/30 last:border-b-0">
+      <span className="text-xs tracking-widest uppercase text-slate-500 dark:text-slate-400">
         {label}
       </span>
-      <p
-        className={`mt-1 text-lg font-semibold ${
-          danger ? "text-red-600" : "text-slate-900"
-        }`}
-      >
+      <p className={`mt-1 text-lg font-semibold ${danger ? "text-red-600 dark:text-red-400" : "text-slate-900 dark:text-slate-100"}`}>
         {value}
       </p>
     </div>

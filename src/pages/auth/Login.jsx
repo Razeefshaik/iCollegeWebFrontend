@@ -2,6 +2,7 @@ import { useState } from "react";
 import DarkModeToggle from "../../components/layout/DarkModeToggle";
 import "../../styles/globals.css";
 import { Link, useNavigate } from "react-router-dom";
+import { loginUser } from "../../services/api"; // ✅ ADDED
 
 export default function Login() {
   /* ---------- STATE ---------- */
@@ -11,8 +12,7 @@ export default function Login() {
   });
 
   const [errors, setErrors] = useState({});
-
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
 
   /* ---------- VALIDATION ---------- */
   function validate() {
@@ -32,20 +32,33 @@ export default function Login() {
     return Object.keys(newErrors).length === 0;
   }
 
-function handleSubmit(e) {
-  e.preventDefault();
+  /* ---------- SUBMIT ---------- */
+  async function handleSubmit(e) {
+    e.preventDefault();
 
-  if (!validate()) return;
+    if (!validate()) return;
 
-  //  TEMP AUTH (frontend only)
-  localStorage.setItem("isAuthenticated", "true");
+    try {
+      const res = await loginUser({
+        scholarId: form.scholarId,
+        password: form.password,
+      });
 
-  console.log("Login success:", form);
+      // ✅ STORE JWT TOKEN (CRITICAL)
+      localStorage.setItem("token", res.token);
 
-  // REDIRECT TO DASHBOARD
-  navigate("/student/dashboard");
-}
+      // (Optional: keep since your app already uses it)
+      localStorage.setItem("isAuthenticated", "true");
 
+      console.log("Login success");
+
+      // REDIRECT TO DASHBOARD
+      navigate("/student/dashboard");
+    } catch (err) {
+      console.error("Login failed:", err.message);
+      setErrors({ general: err.message });
+    }
+  }
 
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-300">
@@ -92,6 +105,10 @@ function handleSubmit(e) {
             {/* FORM */}
             <form className="space-y-6" onSubmit={handleSubmit}>
 
+              {errors.general && (
+                <p className="text-sm text-red-500">{errors.general}</p>
+              )}
+
               {/* Scholar ID */}
               <div>
                 <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
@@ -112,22 +129,11 @@ function handleSubmit(e) {
                     onChange={(e) =>
                       setForm({ ...form, scholarId: e.target.value })
                     }
-                    className={`
-                      block w-full pl-10 pr-3 py-3 rounded-xl
-                      bg-input-bg-light dark:bg-input-bg-dark
-                      border
-                      ${
-                        errors.scholarId
-                          ? "border-red-500"
-                          : "border-gray-200 dark:border-gray-700"
-                      }
-                      text-gray-900 dark:text-white
-                      placeholder-gray-400
-                      focus:ring-primary focus:border-primary
-                      transition-colors
-                      sm:text-sm
-                      shadow-sm
-                    `}
+                    className={`block w-full pl-10 pr-3 py-3 rounded-xl bg-input-bg-light dark:bg-input-bg-dark border ${
+                      errors.scholarId
+                        ? "border-red-500"
+                        : "border-gray-200 dark:border-gray-700"
+                    }`}
                   />
                 </div>
 
@@ -158,22 +164,11 @@ function handleSubmit(e) {
                     onChange={(e) =>
                       setForm({ ...form, password: e.target.value })
                     }
-                    className={`
-                      block w-full pl-10 pr-3 py-3 rounded-xl
-                      bg-input-bg-light dark:bg-input-bg-dark
-                      border
-                      ${
-                        errors.password
-                          ? "border-red-500"
-                          : "border-gray-200 dark:border-gray-700"
-                      }
-                      text-gray-900 dark:text-white
-                      placeholder-gray-400
-                      focus:ring-primary focus:border-primary
-                      transition-colors
-                      sm:text-sm
-                      shadow-sm
-                    `}
+                    className={`block w-full pl-10 pr-3 py-3 rounded-xl bg-input-bg-light dark:bg-input-bg-dark border ${
+                      errors.password
+                        ? "border-red-500"
+                        : "border-gray-200 dark:border-gray-700"
+                    }`}
                   />
                 </div>
 
@@ -184,26 +179,9 @@ function handleSubmit(e) {
                 )}
               </div>
 
-              <div className="flex items-center justify-end">
-                <a className="text-sm font-medium text-primary hover:text-primary-hover transition-colors">
-                  Forgot Password?
-                </a>
-              </div>
-
-              {/* Submit Button */}
               <button
                 type="submit"
-                className="
-                  w-full flex justify-center py-3.5 px-4
-                  border border-transparent
-                  rounded-xl
-                  shadow-sm
-                  text-sm font-bold text-white
-                  bg-primary hover:bg-primary-hover
-                  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary
-                  transition-all
-                  transform hover:scale-[1.02] active:scale-[0.98]
-                "
+                className="w-full flex justify-center py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-hover"
               >
                 Sign In
               </button>
@@ -214,7 +192,7 @@ function handleSubmit(e) {
                 Don&apos;t have an account?
                 <Link
                   to="/signup"
-                  className="ml-1 font-bold text-primary hover:text-primary-hover transition-colors"
+                  className="ml-1 font-bold text-primary hover:text-primary-hover"
                 >
                   Sign up
                 </Link>
@@ -224,14 +202,6 @@ function handleSubmit(e) {
           </div>
         </div>
       </div>
-
-      {/* Footer */}
-      <footer className="mt-12 text-center text-gray-400 dark:text-gray-500 text-xs px-4">
-        <p>© 2024 Gymkhana Student Body.</p>
-        <p className="mt-1">
-          Managing Complaints, Announcements & Opinions.
-        </p>
-      </footer>
     </div>
   );
 }

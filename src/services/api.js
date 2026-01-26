@@ -1,29 +1,32 @@
+// ==========================
 // API Base URL
+// ==========================
 const BASE_URL = "https://icollegebackendjav-production.up.railway.app";
 
+// ==========================
 // Get JWT token from localStorage
-// Try multiple possible keys in case auth module uses different key
+// ==========================
 function getToken() {
-  // Priority order: token, jwtToken, authToken, accessToken
   const token =
     localStorage.getItem("token") ||
     localStorage.getItem("jwtToken") ||
     localStorage.getItem("authToken") ||
     localStorage.getItem("accessToken");
 
-  // If no token found, log a helpful message
   if (!token) {
     console.warn(
       "⚠️ No authentication token found! Please login or add a test token.\n" +
-      "For testing, you can manually add a token:\n" +
-      "localStorage.setItem('token', 'your-test-token-here')"
+        "For testing, you can manually add a token:\n" +
+        "localStorage.setItem('token', 'your-test-token-here')"
     );
   }
 
   return token;
 }
 
-// Helper function to make API requests
+// ==========================
+// Helper function to make AUTHENTICATED API requests
+// ==========================
 async function apiRequest(endpoint, options = {}) {
   const token = getToken();
   const url = `${BASE_URL}${endpoint}`;
@@ -39,47 +42,44 @@ async function apiRequest(endpoint, options = {}) {
 
   try {
     const response = await fetch(url, config);
-    
+
     if (!response.ok) {
-      // Try to get error message from response
       let errorMessage = `HTTP error! status: ${response.status}`;
+
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || errorMessage;
-        
-        // Log full error for debugging
+
         console.error("API Error Response:", {
           status: response.status,
           statusText: response.statusText,
           data: errorData,
-          url: url,
+          url,
           hasToken: !!token,
         });
-      } catch (e) {
-        // If response is not JSON, get text
+      } catch {
         const text = await response.text().catch(() => "");
         errorMessage = text || errorMessage;
+
         console.error("API Error (non-JSON):", {
           status: response.status,
           statusText: response.statusText,
-          text: text,
-          url: url,
+          text,
+          url,
           hasToken: !!token,
         });
       }
-      
-      // Special handling for 403
-      if (response.status === 403) {
-        errorMessage = "Access forbidden. Please check your authentication token or permissions.";
-      }
-      
-      // Special handling for 401
+
       if (response.status === 401) {
-        errorMessage = "Unauthorized. Please login again.";
-        // Optionally clear token and redirect to login
         localStorage.removeItem("token");
+        errorMessage = "Unauthorized. Please login again.";
       }
-      
+
+      if (response.status === 403) {
+        errorMessage =
+          "Access forbidden. Please check your authentication token or permissions.";
+      }
+
       throw new Error(errorMessage);
     }
 
@@ -90,13 +90,58 @@ async function apiRequest(endpoint, options = {}) {
   }
 }
 
-// Complaint Module API Functions
+// =====================================================
+// AUTH MODULE (NO TOKEN REQUIRED)
+// =====================================================
 
 /**
- * Create a new complaint
- * @param {Object} complaintData - { title, description, imageUrl, category }
- * @returns {Promise<Object>} ComplaintResponse object
+ * Register a new student
+ * @param {Object} userData - { name, publicName, email, password, scholarId }
+ * @returns {Promise<Object>} { token }
  */
+export async function registerUser(userData) {
+  const response = await fetch(`${BASE_URL}/auth/register`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(userData),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "Registration failed");
+  }
+
+  return await response.json(); // { token }
+}
+
+/**
+ * Login user
+ * @param {Object} credentials - { scholarId, password }
+ * @returns {Promise<Object>} { token }
+ */
+export async function loginUser(credentials) {
+  const response = await fetch(`${BASE_URL}/auth/login`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(credentials),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "Login failed");
+  }
+
+  return await response.json(); // { token }
+}
+
+// =====================================================
+// COMPLAINT MODULE (AUTH REQUIRED)
+// =====================================================
+
 export async function createComplaint(complaintData) {
   return apiRequest("/complaints/create-complaint", {
     method: "POST",
@@ -105,50 +150,41 @@ export async function createComplaint(complaintData) {
 }
 
 /**
- * Get all complaints (feed) with pagination
- * @param {number} page - Page number (starts at 0)
- * @param {number} size - Number of items per page
- * @returns {Promise<Array>} Array of ComplaintResponse objects
+ * GET ALL COMPLAINTS (PAGINATED)
+ * Returns FULL Spring Boot page object
  */
 export async function getAllComplaints(page = 0, size = 10) {
-  const response = await apiRequest(`/complaints/get-all-complaints?page=${page}&size=${size}`);
-  // Ensure we return an array
-  return Array.isArray(response) ? response : [];
+  return apiRequest(
+    `/complaints/get-all-complaints?page=${page}&size=${size}`
+  );
 }
 
 /**
- * Get complaints created by the logged-in user
- * @returns {Promise<Array>} Array of ComplaintResponse objects
+ * GET LOGGED-IN USER COMPLAINTS
  */
 export async function getMyComplaints() {
-  const response = await apiRequest("/complaints/my-complaints");
-  // Ensure we return an array
-  return Array.isArray(response) ? response : [];
+  return apiRequest("/complaints/my-complaints");
 }
 
-/**
- * Toggle upvote on a complaint (like/unlike)
- * @param {number} complaintId - ID of the complaint
- * @returns {Promise<Object>} Updated ComplaintResponse object
- */
 export async function toggleUpvote(complaintId) {
   return apiRequest(`/complaints/${complaintId}/upvote`, {
     method: "PUT",
   });
 }
 
-// Category mapping from frontend to backend
+// =====================================================
+// CATEGORY MAPPING
+// =====================================================
+
 export const CATEGORY_MAP = {
   facilities: "INFRASTRUCTURE",
   academics: "ACADEMIC",
   events: "OTHER",
   other: "OTHER",
-  // Add more mappings as needed
   hostel: "HOSTEL",
   mess: "MESS",
 };
 
-// Reverse mapping for display
 export const CATEGORY_DISPLAY = {
   INFRASTRUCTURE: "Facilities",
   ACADEMIC: "Academics",
@@ -156,3 +192,18 @@ export const CATEGORY_DISPLAY = {
   MESS: "Mess",
   OTHER: "Other",
 };
+
+// =====================================================
+// COMMENTS MODULE (AUTH REQUIRED)
+// =====================================================
+
+export async function getComments(complaintId) {
+  return apiRequest(`/complaint/${complaintId}/comments`);
+}
+
+export async function addComment(complaintId, text) {
+  return apiRequest(`/complaint/${complaintId}/comments`, {
+    method: "POST",
+    body: JSON.stringify({ text }),
+  });
+}

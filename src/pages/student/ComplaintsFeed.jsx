@@ -5,6 +5,8 @@ import {
   getMyComplaints,
   toggleUpvote,
   CATEGORY_DISPLAY,
+  getComments,
+  addComment,
 } from "../../services/api";
 
 export default function ComplaintsFeed() {
@@ -18,6 +20,11 @@ export default function ComplaintsFeed() {
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [upvotingIds, setUpvotingIds] = useState(new Set());
+  const [openCommentsFor, setOpenCommentsFor] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [commentText, setCommentText] = useState("");
+  const [commentLoading, setCommentLoading] = useState(false);
+
 
   // Fetch complaints based on active tab
   useEffect(() => {
@@ -25,92 +32,95 @@ export default function ComplaintsFeed() {
   }, [activeTab, page]);
 
   async function fetchComplaints() {
-    setLoading(true);
-    setError("");
+  setLoading(true);
+  setError("");
 
-    try {
-      let data;
-      console.log("Fetching complaints for tab:", activeTab);
-      if (activeTab === "my") {
-        console.log("Calling getMyComplaints()");
-        data = await getMyComplaints();
-        setHasMore(false); // My complaints doesn't have pagination
-      } else {
-        console.log("Calling getAllComplaints() with page:", page);
-        data = await getAllComplaints(page, 10);
-        setHasMore(data.length === 10); // If we got 10 items, there might be more
-      }
+  try {
+    let list = [];
 
-      // Log the response for debugging
-      console.log("API Response:", data);
-      console.log("Is Array?", Array.isArray(data));
-      console.log("Type:", typeof data);
-      console.log("Data length:", data?.length);
-      if (data && data.length > 0) {
-        console.log("First complaint object:", JSON.stringify(data[0], null, 2));
-        console.log("All complaint keys:", Object.keys(data[0] || {}));
-      } else {
-        console.log("⚠️ No complaints in response - array is empty");
-      }
+    if (activeTab === "my") {
+      const response = await getMyComplaints();
+      list = response; // already an array
+      setHasMore(false);
+    } else {
+      const response = await getAllComplaints(page, 10);
 
-      // Ensure data is an array
-      if (!Array.isArray(data)) {
-        console.error("API returned non-array data:", data);
-        setError(
-          `Invalid response format from server. Expected array, got: ${typeof data}`
-        );
-        setComplaints([]);
-        return;
-      }
+      // ✅ FIX: Spring Boot pagination
+      list = response.content || [];
+      setHasMore(!response.last);
+    }
 
-      // Transform API response to match UI format
-      const transformedComplaints = data.map((complaint) => {
-        // Handle different possible field names from API
-        const id = complaint.complaintId || complaint.id || complaint.complaint_id;
-        const author = complaint.createdBy || complaint.author || complaint.userName || "Anonymous";
-        const createdAt = complaint.createdAt || complaint.created_at || complaint.date;
-        const category = complaint.category || "OTHER";
-        const status = complaint.status || "PENDING";
-        
-        return {
-          id: id,
-          author: author,
-          authorInitials: author && author !== "Anonymous"
+    const transformedComplaints = list.map((complaint) => {
+      const author =
+        complaint.createdBy ||
+        complaint.author ||
+        complaint.userName ||
+        "Anonymous";
+
+      return {
+        id: complaint.complaintId,
+        author,
+        authorInitials:
+          author !== "Anonymous"
             ? author
                 .split(" ")
                 .map((n) => n[0])
                 .join("")
                 .toUpperCase()
             : null,
-          timeAgo: createdAt ? formatTimeAgo(createdAt) : "Recently",
-          category: CATEGORY_DISPLAY[category] || category,
-          categoryColor: getCategoryColor(category),
-          title: complaint.title || "Untitled",
-          description: complaint.description || "",
-          imageUrl: complaint.imageUrl || complaint.image_url || null,
-          likes: complaint.upvotes || complaint.upvotes || 0,
-          comments: 0,
-          isLiked: false,
-          status: status,
-          statusColor: getStatusColor(status),
-        };
-      });
+        timeAgo: formatTimeAgo(complaint.createdAt),
+        category: CATEGORY_DISPLAY[complaint.category] || complaint.category,
+        categoryColor: getCategoryColor(complaint.category),
+        title: complaint.title || "Untitled",
+        description: complaint.description || "",
+        imageUrl: complaint.imageUrl || null,
+        likes: complaint.upvotes || 0,
+        comments: 0,
+        isLiked: false,
+        status: complaint.status || "PENDING",
+        statusColor: getStatusColor(complaint.status || "PENDING"),
+      };
+    });
 
-      console.log("All transformed complaints:", transformedComplaints);
-      console.log("Setting complaints state with:", transformedComplaints.length, "items");
-
-      if (page === 0) {
-        setComplaints(transformedComplaints);
-      } else {
-        setComplaints((prev) => [...prev, ...transformedComplaints]);
-      }
-    } catch (err) {
-      console.error("Error fetching complaints:", err);
-      setError(err.message || "Failed to load complaints. Please try again.");
-    } finally {
-      setLoading(false);
+    if (page === 0) {
+      setComplaints(transformedComplaints);
+    } else {
+      setComplaints((prev) => [...prev, ...transformedComplaints]);
     }
+  } catch (err) {
+    console.error(err);
+    setError(err.message || "Failed to load complaints");
+  } finally {
+    setLoading(false);
   }
+}
+
+async function loadComments(complaintId) {
+  setCommentLoading(true);
+  try {
+    const data = await getComments(complaintId);
+    setComments(Array.isArray(data) ? data : []);
+    setOpenCommentsFor(complaintId);
+  } catch (err) {
+    alert(err.message || "Failed to load comments");
+  } finally {
+    setCommentLoading(false);
+  }
+}
+async function handleAddComment(complaintId) {
+  if (!commentText.trim()) return;
+
+  try {
+    await addComment(complaintId, commentText);
+    setCommentText("");
+    loadComments(complaintId); // refresh comments
+  } catch (err) {
+    alert(err.message || "Failed to add comment");
+  }
+}
+
+
+
 
   function formatTimeAgo(dateString) {
     const date = new Date(dateString);
@@ -444,7 +454,9 @@ export default function ComplaintsFeed() {
                       </span>
                       <span>{complaint.likes}</span>
                     </button>
-                    <button className="flex items-center gap-1.5 text-text-sub-light dark:text-text-sub-dark hover:text-primary transition-colors text-sm font-medium">
+                    <button 
+                      onClick={() => loadComments(complaint.id)}
+                      className="flex items-center gap-1.5 text-text-sub-light dark:text-text-sub-dark hover:text-primary transition-colors text-sm font-medium">
                       <span className="material-icons-round">chat_bubble</span>
                       <span>{complaint.comments}</span>
                     </button>
@@ -478,6 +490,43 @@ export default function ComplaintsFeed() {
                       : complaint.status}
                   </span>
                 </div>
+                {openCommentsFor === complaint.id && (
+  <div className="mt-4 border-t pt-4 space-y-3">
+    {commentLoading ? (
+      <p className="text-sm text-gray-400">Loading comments...</p>
+    ) : comments.length === 0 ? (
+      <p className="text-sm text-gray-400">No comments yet</p>
+    ) : (
+      comments.map((c) => (
+        <div key={c.id} className="text-sm">
+          <span className="font-semibold">{c.userName}</span>
+          <p className="text-text-sub-light dark:text-text-sub-dark">
+            {c.text}
+          </p>
+          <p className="text-xs text-gray-400">
+            {new Date(c.createdAt).toLocaleString()}
+          </p>
+        </div>
+      ))
+    )}
+
+    <div className="flex gap-2 pt-2">
+      <input
+        value={commentText}
+        onChange={(e) => setCommentText(e.target.value)}
+        placeholder="Write a comment..."
+        className="flex-1 px-3 py-2 text-sm rounded-lg border dark:bg-card-dark"
+      />
+      <button
+        onClick={() => handleAddComment(complaint.id)}
+        className="px-4 py-2 bg-primary text-white rounded-lg text-sm"
+      >
+        Post
+      </button>
+    </div>
+  </div>
+)}
+
               </div>
             ))}
           </div>
