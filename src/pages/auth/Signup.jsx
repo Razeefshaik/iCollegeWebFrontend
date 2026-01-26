@@ -2,6 +2,7 @@ import { useState } from "react";
 import DarkModeToggle from "../../components/layout/DarkModeToggle";
 import "../../styles/globals.css";
 import { Link, useNavigate } from "react-router-dom";
+import { registerUser } from "../../services/api"; // ✅ ADDED
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -54,23 +55,33 @@ export default function Signup() {
   }
 
   /* ---------- SUBMIT ---------- */
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     if (!validate()) return;
 
-    //  Save signup data (frontend-only simulation)
-    localStorage.setItem(
-      "registeredUser",
-      JSON.stringify({
-        scholarId: form.scholarId,
+    try {
+      const res = await registerUser({
+        name: form.fullName,          // ✅ backend expects `name`
+        publicName: form.publicName,
+        email: form.email,
         password: form.password,
-      })
-    );
+        scholarId: form.scholarId,
+      });
 
-    console.log("Signup success:", form);
+      // ✅ STORE JWT TOKEN
+      localStorage.setItem("token", res.token);
 
-    //  Redirect to login
-    navigate("/login");
+      // (Optional – keeps consistency with your app)
+      localStorage.setItem("isAuthenticated", "true");
+
+      console.log("Signup success");
+
+      // ✅ Redirect to dashboard (or login if you prefer)
+      navigate("/student/dashboard");
+    } catch (err) {
+      console.error("Signup failed:", err.message);
+      setErrors({ general: err.message });
+    }
   }
 
   return (
@@ -137,6 +148,11 @@ export default function Signup() {
 
             {/* FORM */}
             <form className="space-y-5" onSubmit={handleSubmit}>
+
+              {errors.general && (
+                <p className="text-sm text-red-500">{errors.general}</p>
+              )}
+
               {[
                 ["Full Name", "person", "John Doe", "text", "fullName"],
                 ["Public Name", "face", "Johnny", "text", "publicName"],
@@ -166,7 +182,7 @@ export default function Signup() {
                         errors[key]
                           ? "border-red-500"
                           : "border-gray-200 dark:border-gray-600"
-                      } text-gray-900 dark:text-white placeholder-gray-400 transition-all duration-200 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/40`}
+                      }`}
                     />
                   </div>
 
@@ -184,7 +200,7 @@ export default function Signup() {
                   onChange={(e) =>
                     setForm({ ...form, acceptedTerms: e.target.checked })
                   }
-                  className="w-4 h-4 mt-1 text-primary border-gray-300 rounded focus:ring-primary/30"
+                  className="w-4 h-4 mt-1 text-primary border-gray-300 rounded"
                 />
                 <p className="ml-3 text-sm text-gray-500 dark:text-gray-400">
                   I agree to the{" "}
@@ -200,7 +216,7 @@ export default function Signup() {
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-xl bg-primary text-white font-bold border-2 border-transparent hover:bg-primary-hover transition-all duration-200 hover:scale-[1.02] active:scale-[0.97] focus:outline-none focus:ring-2 focus:ring-primary/40"
+                className="w-full py-3.5 rounded-xl bg-primary text-white font-bold"
               >
                 Sign Up
               </button>
@@ -216,12 +232,6 @@ export default function Signup() {
               </p>
             </form>
           </div>
-        </div>
-
-        <div className="hidden lg:block py-4 border-t border-gray-100 dark:border-gray-800 text-center">
-          <p className="text-xs text-gray-400 dark:text-gray-500">
-            Managing Complaints, Announcements & Opinions.
-          </p>
         </div>
       </div>
     </div>
