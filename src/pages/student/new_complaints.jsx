@@ -188,7 +188,7 @@ export default function Complaints() {
                 <option value="other">Other</option>
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-                <span className="material-icons text-xl">expand_more</span>
+                <span className="material-icons-round text-xl">arrow_drop_down</span>
               </div>
             </div>
           </div>
