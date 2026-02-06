@@ -227,7 +227,7 @@ export default function Signup() {
                   to="/login"
                   className="text-primary font-semibold hover:text-primary-hover"
                 >
-                  Sign in here
+                  Log in here
                 </Link>
               </p>
             </form>

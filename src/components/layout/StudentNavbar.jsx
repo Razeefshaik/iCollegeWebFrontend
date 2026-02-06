@@ -76,13 +76,6 @@ export default function StudentNavbar() {
               <span className="absolute top-2 right-2.5 w-2 h-2 bg-primary rounded-full border-2 border-white dark:border-card-dark"></span>
             </button>
 
-            {/* Post Complaint */}
-            <button className="hidden md:flex items-center gap-2 bg-primary hover:bg-red-600 text-white px-4 py-2 rounded-full font-medium transition-transform active:scale-95 shadow-lg shadow-red-500/20">
-              <span className="material-icons-round text-sm">
-                add
-              </span>
-              Post Complaint
-            </button>
 
             {/* Profile Avatar + Dropdown */}
             <div className="relative" ref={dropdownRef}>

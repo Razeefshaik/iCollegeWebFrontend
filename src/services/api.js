@@ -40,17 +40,34 @@ async function apiRequest(endpoint, options = {}) {
     },
   };
 
+  // Debug logging
+  console.log("API Request:", {
+    url,
+    method: config.method || "GET",
+    hasToken: !!token,
+    tokenPreview: token ? `${token.substring(0, 20)}...` : "none",
+    headers: config.headers,
+  });
+
   try {
     const response = await fetch(url, config);
 
+    console.log("API Response:", {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      url: response.url,
+    });
+
     if (!response.ok) {
       let errorMessage = `HTTP error! status: ${response.status}`;
+      let responseText = "";
 
       try {
         const errorData = await response.json();
         errorMessage = errorData.message || errorData.error || errorMessage;
 
-        console.error("API Error Response:", {
+        console.error("API Error Response (JSON):", {
           status: response.status,
           statusText: response.statusText,
           data: errorData,
@@ -58,13 +75,13 @@ async function apiRequest(endpoint, options = {}) {
           hasToken: !!token,
         });
       } catch {
-        const text = await response.text().catch(() => "");
-        errorMessage = text || errorMessage;
+        responseText = await response.text().catch(() => "");
+        errorMessage = responseText || errorMessage;
 
         console.error("API Error (non-JSON):", {
           status: response.status,
           statusText: response.statusText,
-          text,
+          text: responseText,
           url,
           hasToken: !!token,
         });
@@ -76,6 +93,23 @@ async function apiRequest(endpoint, options = {}) {
       }
 
       if (response.status === 403) {
+        // Log full details for 403
+        const allHeaders = {};
+        response.headers.forEach((value, key) => {
+          allHeaders[key] = value;
+        });
+        
+        console.error("403 Forbidden Details:", {
+          url,
+          status: response.status,
+          statusText: response.statusText,
+          responseText: responseText || "No response body",
+          requestHeaders: config.headers,
+          responseHeaders: allHeaders,
+          tokenExists: !!token,
+          tokenLength: token ? token.length : 0,
+        });
+        
         errorMessage =
           "Access forbidden. Please check your authentication token or permissions.";
       }
@@ -95,9 +129,9 @@ async function apiRequest(endpoint, options = {}) {
 // =====================================================
 
 /**
- * Register a new student
+ * Register a new student (Step 1 - sends OTP)
  * @param {Object} userData - { name, publicName, email, password, scholarId }
- * @returns {Promise<Object>} { token }
+ * @returns {Promise<String>} Success message
  */
 export async function registerUser(userData) {
   const response = await fetch(`${BASE_URL}/auth/register`, {
@@ -113,7 +147,53 @@ export async function registerUser(userData) {
     throw new Error(errorData.message || "Registration failed");
   }
 
+  const result = await response.json();
+  // Backend returns a message string, not JSON object
+  return typeof result === "string" ? result : result.message || "Registration successful. Please check your email for OTP.";
+}
+
+/**
+ * Verify OTP (Step 2 - activates account and returns token)
+ * @param {String} scholarId - Student scholar ID
+ * @param {String} otp - OTP code received via email
+ * @returns {Promise<Object>} { token }
+ */
+export async function verifyOTP(scholarId, otp) {
+  const response = await fetch(`${BASE_URL}/auth/verify?scholarId=${scholarId}&otp=${otp}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "OTP verification failed");
+  }
+
   return await response.json(); // { token }
+}
+
+/**
+ * Resend OTP
+ * @param {String} scholarId - Student scholar ID
+ * @returns {Promise<String>} Success message
+ */
+export async function resendOTP(scholarId) {
+  const response = await fetch(`${BASE_URL}/auth/resend-otp?scholarId=${scholarId}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.message || "Failed to resend OTP");
+  }
+
+  const result = await response.json();
+  return typeof result === "string" ? result : result.message || "OTP resent successfully.";
 }
 
 /**
@@ -150,13 +230,11 @@ export async function createComplaint(complaintData) {
 }
 
 /**
- * GET ALL COMPLAINTS (PAGINATED)
- * Returns FULL Spring Boot page object
+ * GET ALL COMPLAINTS
+ * Fetches all complaints, sorted by newest first
  */
-export async function getAllComplaints(page = 0, size = 10) {
-  return apiRequest(
-    `/complaints/get-all-complaints?page=${page}&size=${size}`
-  );
+export async function getAllComplaints() {
+  return apiRequest("/complaints/all");
 }
 
 /**
@@ -168,6 +246,17 @@ export async function getMyComplaints() {
 
 export async function toggleUpvote(complaintId) {
   return apiRequest(`/complaints/${complaintId}/upvote`, {
+    method: "PUT",
+  });
+}
+
+/**
+ * Update complaint status (Admin Only)
+ * @param {Number} complaintId - Complaint ID
+ * @param {String} status - PENDING, RESOLVED, or DISMISSED
+ */
+export async function updateComplaintStatus(complaintId, status) {
+  return apiRequest(`/complaints/update-status/${complaintId}?status=${status}`, {
     method: "PUT",
   });
 }
@@ -198,12 +287,44 @@ export const CATEGORY_DISPLAY = {
 // =====================================================
 
 export async function getComments(complaintId) {
-  return apiRequest(`/complaint/${complaintId}/comments`);
+  return apiRequest(`/comments/complaint/${complaintId}`);
 }
 
-export async function addComment(complaintId, text) {
-  return apiRequest(`/complaint/${complaintId}/comments`, {
+export async function addComment(complaintId, content, anonymous = false) {
+  return apiRequest("/comments/add", {
     method: "POST",
-    body: JSON.stringify({ text }),
+    body: JSON.stringify({
+      complaintId,
+      content,
+      anonymous,
+    }),
   });
+}
+
+// =====================================================
+// USER PROFILE MODULE (AUTH REQUIRED)
+// =====================================================
+
+/**
+ * Get current user profile
+ * @returns {Promise<Object>} User profile data { name, publicName, email, scholarId, role }
+ */
+export async function getUserProfile() {
+  // Check token before making request
+  const token = getToken();
+  if (!token) {
+    throw new Error("No authentication token found. Please log in.");
+  }
+  
+  // Try the endpoint
+  try {
+    return await apiRequest("/auth/me");
+  } catch (error) {
+    // If 403, the token might be invalid - suggest re-login
+    if (error.message.includes("403") || error.message.includes("forbidden")) {
+      console.warn("Profile endpoint returned 403. Token might be invalid or expired.");
+      console.warn("Token preview:", token.substring(0, 50) + "...");
+    }
+    throw error;
+  }
 }
