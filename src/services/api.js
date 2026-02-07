@@ -173,24 +173,26 @@ export async function toggleUpvote(complaintId) {
 }
 
 // =====================================================
-// CATEGORY MAPPING
 // =====================================================
 
 export const CATEGORY_MAP = {
-  facilities: "INFRASTRUCTURE",
-  academics: "ACADEMIC",
-  events: "OTHER",
-  other: "OTHER",
+  academics: "ACADEMICS",
   hostel: "HOSTEL",
-  mess: "MESS",
+  internet: "INTERNET",
+  cleanliness: "CLEANLINESS",
+  infrastructure: "INFRASTRUCTURE",
+  canteen: "CANTEEN",
+  other: "OTHER",
 };
 
 export const CATEGORY_DISPLAY = {
-  INFRASTRUCTURE: "Facilities",
-  ACADEMIC: "Academics",
-  HOSTEL: "Hostel",
-  MESS: "Mess",
-  OTHER: "Other",
+  ACADEMICS: "academics",
+  HOSTEL: "hostel",
+  INTERNET: "internet",
+  CLEANLINESS: "cleanliness",
+  INFRASTRUCTURE: "infrastructure",
+  CANTEEN: "canteen",
+  OTHER: "other",
 };
 
 // =====================================================

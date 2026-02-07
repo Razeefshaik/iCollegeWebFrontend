@@ -182,10 +182,13 @@ export default function Complaints() {
                 <option disabled value="">
                   Select a category
                 </option>
-                <option value="facilities">Facilities</option>
-                <option value="academics">Academics</option>
-                <option value="events">Events</option>
-                <option value="other">Other</option>
+                <option value="academics">academics</option>
+                <option value="hostel">hostel</option>
+                <option value="internet">internet</option>
+                <option value="cleanliness">cleanliness</option>
+                <option value="infrastructure">infrastructure</option>
+                <option value="canteen">canteen</option>
+                <option value="other">other</option>
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
                 <span className="material-icons-round text-xl">arrow_drop_down</span>

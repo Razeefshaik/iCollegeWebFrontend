@@ -69,7 +69,7 @@ export default function ComplaintsFeed() {
                 .toUpperCase()
             : null,
         timeAgo: formatTimeAgo(complaint.createdAt),
-        category: CATEGORY_DISPLAY[complaint.category] || complaint.category,
+        category: (CATEGORY_DISPLAY[complaint.category] || complaint.category || "").toString().toLowerCase(),
         categoryColor: getCategoryColor(complaint.category),
         title: complaint.title || "Untitled",
         description: complaint.description || "",
@@ -136,10 +136,12 @@ async function handleAddComment(complaintId) {
 
   function getCategoryColor(category) {
     const colorMap = {
-      INFRASTRUCTURE: "green",
-      ACADEMIC: "blue",
+      ACADEMICS: "blue",
       HOSTEL: "purple",
-      MESS: "orange",
+      INTERNET: "indigo",
+      CLEANLINESS: "green",
+      INFRASTRUCTURE: "green",
+      CANTEEN: "orange",
       OTHER: "purple",
     };
     return colorMap[category] || "blue";
@@ -198,15 +200,16 @@ async function handleAddComment(complaintId) {
     }
   }
 
-  // Filter complaints by category and search
+  // Filter complaints by category and search (works for both Public Feed and My Complaints)
   const filteredComplaints = complaints.filter((complaint) => {
+    const categoryDisplay = (complaint.category || "").toString().toLowerCase();
+    const activeCat = (activeCategory || "").toString().toLowerCase();
     const matchesCategory =
-      activeCategory === "all" ||
-      complaint.category.toLowerCase() === activeCategory.toLowerCase();
+      activeCat === "all" || categoryDisplay === activeCat;
     const matchesSearch =
       !searchQuery.trim() ||
-      complaint.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      complaint.description.toLowerCase().includes(searchQuery.toLowerCase());
+      (complaint.title || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (complaint.description || "").toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -300,23 +303,30 @@ async function handleAddComment(complaintId) {
             </button>
           </div>
 
-          {/* Category Filters */}
+          {/* Category Filters (All = show all; others filter by backend category) */}
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 mb-6">
-            {["All", "Academics", "Facilities", "Events", "Hostels"].map(
-              (cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat.toLowerCase())}
-                  className={`shrink-0 px-5 py-2 rounded-full text-sm font-medium transition-colors ${
-                    activeCategory === cat.toLowerCase()
-                      ? "bg-background-dark dark:bg-white text-white dark:text-background-dark"
-                      : "border border-gray-200 dark:border-gray-700 bg-white dark:bg-card-dark text-text-sub-light dark:text-text-sub-dark hover:border-gray-300 dark:hover:border-gray-600"
-                  }`}
-                >
-                  {cat}
-                </button>
-              )
-            )}
+            {[
+              { value: "all", label: "All" },
+              { value: "academics", label: "academics" },
+              { value: "hostel", label: "hostel" },
+              { value: "internet", label: "internet" },
+              { value: "cleanliness", label: "cleanliness" },
+              { value: "infrastructure", label: "infrastructure" },
+              { value: "canteen", label: "canteen" },
+              { value: "other", label: "other" },
+            ].map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setActiveCategory(value)}
+                className={`shrink-0 px-5 py-2 rounded-full text-sm font-medium transition-colors ${
+                  (activeCategory || "").toLowerCase() === value
+                    ? "bg-background-dark dark:bg-white text-white dark:text-background-dark"
+                    : "border border-gray-200 dark:border-gray-700 bg-white dark:bg-card-dark text-text-sub-light dark:text-text-sub-dark hover:border-gray-300 dark:hover:border-gray-600"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
           </div>
 
           {/* Error Message */}
