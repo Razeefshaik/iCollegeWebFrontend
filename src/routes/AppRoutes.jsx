@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "../pages/auth/Login";
 import Signup from "../pages/auth/Signup";
+import AdminSignup from "../pages/auth/AdminSignup";
+import VerifyOtp from "../pages/auth/VerifyOtp";
 import Landing from "../pages/auth/Landing";
 
 import Dashboard from "../pages/student/StudentDashboard";
@@ -29,6 +31,8 @@ export default function AppRoutes() {
       {/* Auth */}
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
+      <Route path="/signup/admin" element={<AdminSignup />} />
+      <Route path="/verify-otp" element={<VerifyOtp />} />
 
       {/* Student */}
       <Route

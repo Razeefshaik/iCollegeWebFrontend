@@ -2,12 +2,11 @@ import { useState } from "react";
 import DarkModeToggle from "../../components/layout/DarkModeToggle";
 import "../../styles/globals.css";
 import { Link, useNavigate } from "react-router-dom";
-import { registerUser } from "../../services/api"; // ✅ ADDED
+import { registerUser } from "../../services/api";
 
-export default function Signup() {
+export default function AdminSignup() {
   const navigate = useNavigate();
 
-  /* ---------- STATE ---------- */
   const [form, setForm] = useState({
     fullName: "",
     publicName: "",
@@ -16,11 +15,12 @@ export default function Signup() {
     password: "",
     confirmPassword: "",
     acceptedTerms: false,
+    registerAsAdmin: false,
+    secretPasskey: "",
   });
 
   const [errors, setErrors] = useState({});
 
-  /* ---------- VALIDATION ---------- */
   function validate() {
     const newErrors = {};
 
@@ -46,6 +46,10 @@ export default function Signup() {
       newErrors.confirmPassword = "Passwords do not match";
     }
 
+    if (form.registerAsAdmin && !form.secretPasskey.trim()) {
+      newErrors.secretPasskey = "Secret passkey is required for admin registration";
+    }
+
     if (!form.acceptedTerms) {
       newErrors.acceptedTerms = "You must accept the terms";
     }
@@ -54,29 +58,31 @@ export default function Signup() {
     return Object.keys(newErrors).length === 0;
   }
 
-  /* ---------- SUBMIT ---------- */
   async function handleSubmit(e) {
     e.preventDefault();
     if (!validate()) return;
 
     try {
-      const res = await registerUser({
-        name: form.fullName,          // ✅ backend expects `name`
+      const payload = {
+        name: form.fullName,
         publicName: form.publicName,
         email: form.email,
         password: form.password,
         scholarId: form.scholarId,
-      });
+      };
 
-      // ✅ STORE JWT TOKEN
+      if (form.registerAsAdmin && form.secretPasskey.trim()) {
+        payload.role = "ADMIN";
+        payload.secretPasskey = form.secretPasskey;
+      }
+
+      const res = await registerUser(payload);
+
       localStorage.setItem("token", res.token);
-
-      // (Optional – keeps consistency with your app)
       localStorage.setItem("isAuthenticated", "true");
 
-      console.log("Signup success");
-
-      navigate("/verify-otp", { state: { redirectTo: "/student/dashboard" } });
+      const redirectTo = form.registerAsAdmin ? "/admin/dashboard" : "/student/dashboard";
+      navigate("/verify-otp", { state: { redirectTo } });
     } catch (err) {
       console.error("Signup failed:", err.message);
       setErrors({ general: err.message });
@@ -145,7 +151,6 @@ export default function Signup() {
               </p>
             </div>
 
-            {/* FORM */}
             <form className="space-y-5" onSubmit={handleSubmit}>
 
               {errors.general && (
@@ -191,6 +196,59 @@ export default function Signup() {
                 </div>
               ))}
 
+              {/* Register as admin checkbox */}
+              <div className="flex items-start pt-2">
+                <input
+                  type="checkbox"
+                  id="registerAsAdmin"
+                  checked={form.registerAsAdmin}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      registerAsAdmin: e.target.checked,
+                      secretPasskey: e.target.checked ? form.secretPasskey : "",
+                    })
+                  }
+                  className="w-4 h-4 mt-1 text-primary border-gray-300 rounded"
+                />
+                <label htmlFor="registerAsAdmin" className="ml-3 text-sm text-gray-700 dark:text-gray-300 font-medium cursor-pointer">
+                  Register as admin
+                </label>
+              </div>
+
+              {/* Secret passkey - shown only when admin checkbox is checked */}
+              {form.registerAsAdmin && (
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
+                    Enter secret passkey
+                  </label>
+
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-xl">
+                      <span className="material-icons-round">vpn_key</span>
+                    </span>
+
+                    <input
+                      type="password"
+                      placeholder="Enter admin passkey"
+                      value={form.secretPasskey}
+                      onChange={(e) =>
+                        setForm({ ...form, secretPasskey: e.target.value })
+                      }
+                      className={`w-full h-14 pl-14 pr-4 rounded-xl bg-input-bg-light dark:bg-input-bg-dark border ${
+                        errors.secretPasskey
+                          ? "border-red-500"
+                          : "border-gray-200 dark:border-gray-600"
+                      }`}
+                    />
+                  </div>
+
+                  {errors.secretPasskey && (
+                    <p className="mt-1 text-xs text-red-500">{errors.secretPasskey}</p>
+                  )}
+                </div>
+              )}
+
               {/* Terms */}
               <div className="flex items-start pt-2">
                 <input
@@ -231,12 +289,12 @@ export default function Signup() {
               </p>
 
               <p className="text-sm text-center text-gray-500 dark:text-gray-400">
-                Admin?{" "}
+                Student registration?{" "}
                 <Link
-                  to="/signup/admin"
+                  to="/signup"
                   className="text-primary font-semibold hover:text-primary-hover"
                 >
-                  Register as admin
+                  Sign up as student
                 </Link>
               </p>
             </form>

@@ -52,8 +52,7 @@ export default function Login() {
 
       console.log("Login success");
 
-      // REDIRECT TO DASHBOARD
-      navigate("/student/dashboard");
+      navigate("/verify-otp", { state: { redirectTo: "/student/dashboard" } });
     } catch (err) {
       console.error("Login failed:", err.message);
       setErrors({ general: err.message });
