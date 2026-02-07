@@ -44,15 +44,11 @@ export default function Login() {
         password: form.password,
       });
 
-      // ✅ STORE JWT TOKEN (CRITICAL)
       localStorage.setItem("token", res.token);
-
-      // (Optional: keep since your app already uses it)
       localStorage.setItem("isAuthenticated", "true");
 
-      console.log("Login success");
-
-      navigate("/verify-otp", { state: { redirectTo: "/student/dashboard" } });
+      const redirectTo = res.role === "ADMIN" ? "/admin/dashboard" : "/student/dashboard";
+      navigate(redirectTo);
     } catch (err) {
       console.error("Login failed:", err.message);
       setErrors({ general: err.message });
@@ -184,6 +180,15 @@ export default function Login() {
               >
                 Log In
               </button>
+
+              <div className="text-center">
+                <Link
+                  to="/forgot-password"
+                  className="text-sm text-primary font-medium hover:text-primary-hover"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </form>
 
             <div className="mt-8 text-center">

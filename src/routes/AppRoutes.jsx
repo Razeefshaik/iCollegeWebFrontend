@@ -4,6 +4,8 @@ import Login from "../pages/auth/Login";
 import Signup from "../pages/auth/Signup";
 import AdminSignup from "../pages/auth/AdminSignup";
 import VerifyOtp from "../pages/auth/VerifyOtp";
+import ForgotPassword from "../pages/auth/ForgotPassword";
+import ForgotPasswordReset from "../pages/auth/ForgotPasswordReset";
 import Landing from "../pages/auth/Landing";
 
 import Dashboard from "../pages/student/StudentDashboard";
@@ -33,6 +35,8 @@ export default function AppRoutes() {
       <Route path="/signup" element={<Signup />} />
       <Route path="/signup/admin" element={<AdminSignup />} />
       <Route path="/verify-otp" element={<VerifyOtp />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/forgot-password/reset" element={<ForgotPasswordReset />} />
 
       {/* Student */}
       <Route

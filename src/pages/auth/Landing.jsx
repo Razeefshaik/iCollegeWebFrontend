@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 export default function Landing() {
   const navigate = useNavigate();
@@ -116,6 +116,14 @@ export default function Landing() {
               >
                 Log In
               </button>
+              <p className="text-center text-sm">
+                <Link
+                  to="/forgot-password"
+                  className="text-primary font-medium hover:text-primary-hover"
+                >
+                  Forgot password?
+                </Link>
+              </p>
             </div>
           </div>
         </div>

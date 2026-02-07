@@ -1,7 +1,7 @@
 import { useState } from "react";
 import DarkModeToggle from "../../components/layout/DarkModeToggle";
 import "../../styles/globals.css";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 
 export default function VerifyOtp() {
   const navigate = useNavigate();
@@ -116,11 +116,9 @@ export default function VerifyOtp() {
                   </span>
                   <input
                     type="text"
-                    inputMode="numeric"
-                    placeholder="Enter 6-digit OTP"
+                    placeholder="Enter OTP"
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    maxLength={6}
+                    onChange={(e) => setOtp(e.target.value)}
                     className="w-full h-14 pl-14 pr-4 rounded-xl bg-input-bg-light dark:bg-input-bg-dark border border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-primary focus:border-primary"
                   />
                 </div>
@@ -150,6 +148,12 @@ export default function VerifyOtp() {
               >
                 Proceed
               </button>
+
+              <p className="text-sm text-center text-gray-500 dark:text-gray-400">
+                <Link to="/forgot-password" className="text-primary font-medium hover:text-primary-hover">
+                  Forgot password?
+                </Link>
+              </p>
             </form>
           </div>
         </div>
