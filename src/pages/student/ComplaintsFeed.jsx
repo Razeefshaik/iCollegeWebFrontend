@@ -17,6 +17,8 @@ export default function ComplaintsFeed() {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
   const [upvotingIds, setUpvotingIds] = useState(new Set());
   const [openCommentsFor, setOpenCommentsFor] = useState(null);
   const [comments, setComments] = useState([]);
@@ -27,7 +29,7 @@ export default function ComplaintsFeed() {
   // Fetch complaints based on active tab
   useEffect(() => {
     fetchComplaints();
-  }, [activeTab]);
+  }, [activeTab, page]);
 
   async function fetchComplaints() {
   setLoading(true);
@@ -38,20 +40,25 @@ export default function ComplaintsFeed() {
 
     if (activeTab === "my") {
       const response = await getMyComplaints();
-      list = Array.isArray(response) ? response : []; // API returns array directly
+      list = response; // already an array
       setHasMore(false);
     } else {
-      const response = await getAllComplaints();
-      list = Array.isArray(response) ? response : []; // API returns array directly
-      setHasMore(false); // No pagination, all complaints returned at once
+      const response = await getAllComplaints(page, 10);
+
+      // ✅ FIX: Spring Boot pagination
+      list = response.content || [];
+      setHasMore(!response.last);
     }
 
     const transformedComplaints = list.map((complaint) => {
-      // API returns studentName field (or "Anonymous" if anonymous)
-      const author = complaint.studentName || "Anonymous";
+      const author =
+        complaint.createdBy ||
+        complaint.author ||
+        complaint.userName ||
+        "Anonymous";
 
       return {
-        id: complaint.id || complaint.complaintId,
+        id: complaint.complaintId,
         author,
         authorInitials:
           author !== "Anonymous"
@@ -68,14 +75,18 @@ export default function ComplaintsFeed() {
         description: complaint.description || "",
         imageUrl: complaint.imageUrl || null,
         likes: complaint.upvotes || 0,
-        comments: 0, // Will be updated when comments are loaded
+        comments: 0,
         isLiked: false,
         status: complaint.status || "PENDING",
         statusColor: getStatusColor(complaint.status || "PENDING"),
       };
     });
 
-    setComplaints(transformedComplaints);
+    if (page === 0) {
+      setComplaints(transformedComplaints);
+    } else {
+      setComplaints((prev) => [...prev, ...transformedComplaints]);
+    }
   } catch (err) {
     console.error(err);
     setError(err.message || "Failed to load complaints");
@@ -100,7 +111,7 @@ async function handleAddComment(complaintId) {
   if (!commentText.trim()) return;
 
   try {
-    await addComment(complaintId, commentText, false); // false = not anonymous
+    await addComment(complaintId, commentText);
     setCommentText("");
     loadComments(complaintId); // refresh comments
   } catch (err) {
@@ -177,7 +188,14 @@ async function handleAddComment(complaintId) {
 
   function handleTabChange(tab) {
     setActiveTab(tab);
+    setPage(0); // Reset to first page when switching tabs
     setComplaints([]); // Clear existing complaints
+  }
+
+  function handleLoadMore() {
+    if (hasMore && !loading) {
+      setPage((prev) => prev + 1);
+    }
   }
 
   // Filter complaints by category and search
@@ -280,6 +298,16 @@ async function handleAddComment(complaintId) {
             >
               My Complaints
             </button>
+            <button
+              onClick={() => setActiveTab("polls")}
+              className={`flex-1 py-2 px-4 rounded-lg shadow-sm text-sm text-center transition-all ${
+                activeTab === "polls"
+                  ? "bg-white dark:bg-card-dark text-primary font-semibold"
+                  : "text-text-sub-light dark:text-text-sub-dark hover:bg-white/50 dark:hover:bg-gray-700/50 font-medium"
+              }`}
+            >
+              Polls
+            </button>
           </div>
 
           {/* Category Filters */}
@@ -374,6 +402,9 @@ async function handleAddComment(complaintId) {
                       </span>
                     </div>
                   </div>
+                  <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                    <span className="material-icons-round">more_vert</span>
+                  </button>
                 </div>
 
                 {/* Content */}
@@ -468,9 +499,9 @@ async function handleAddComment(complaintId) {
     ) : (
       comments.map((c) => (
         <div key={c.id} className="text-sm">
-          <span className="font-semibold">{c.studentName || "Anonymous"}</span>
+          <span className="font-semibold">{c.userName}</span>
           <p className="text-text-sub-light dark:text-text-sub-dark">
-            {c.content}
+            {c.text}
           </p>
           <p className="text-xs text-gray-400">
             {new Date(c.createdAt).toLocaleString()}
@@ -500,6 +531,23 @@ async function handleAddComment(complaintId) {
             ))}
           </div>
 
+          {/* Load More Button */}
+          {hasMore && activeTab === "public" && !loading && (
+            <div className="text-center py-6">
+              <button
+                onClick={handleLoadMore}
+                className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Load More
+              </button>
+            </div>
+          )}
+
+          {loading && complaints.length > 0 && (
+            <div className="text-center py-6">
+              <p className="text-slate-500 dark:text-slate-400">Loading more...</p>
+            </div>
+          )}
         </div>
 
         {/* Footer */}

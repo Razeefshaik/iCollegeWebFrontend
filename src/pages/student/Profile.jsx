@@ -2,10 +2,11 @@ import StudentNavbar from "../../components/layout/StudentNavbar";
 import StudentFooter from "../../components/layout/StudentFooter";
 import StudentBottomNav from "../../components/layout/StudentBottomNav";
 import profileImage from "../../assets/images/profile-placeholder.png";
+
+
 import InfoCard from "../../components/profile/InfoCard";
 
 export default function Profile() {
-
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen font-display text-gray-800 dark:text-gray-200 pb-24 md:pb-10">
 

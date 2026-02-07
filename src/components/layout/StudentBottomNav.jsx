@@ -8,6 +8,15 @@ export default function StudentBottomNav() {
         <MobileItem to="/student/dashboard" icon="dashboard" label="Home" />
         <MobileItem to="/student/insights" icon="history" label="Insights" />
 
+        {/* FAB */}
+        <div className="relative -top-6">
+          <button className="w-14 h-14 bg-primary rounded-full flex items-center justify-center text-white shadow-lg shadow-red-500/40 transition-transform active:scale-95 border-4 border-white dark:border-background-dark">
+            <span className="material-icons-round text-3xl">add</span>
+          </button>
+          <span className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-[10px] font-bold text-primary whitespace-nowrap">
+            Post Complaint
+          </span>
+        </div>
 
         <MobileItem to="/student/insights" icon="campaign" label="Updates" />
         <MobileItem to="/student/profile" icon="person" label="Profile" />
