@@ -99,7 +99,7 @@ export default function Login() {
               Welcome Back
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm">
-              Please sign in to access your dashboard
+              Please log in to access your dashboard
             </p>
 
             {/* FORM */}
@@ -183,7 +183,7 @@ export default function Login() {
                 type="submit"
                 className="w-full flex justify-center py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-hover"
               >
-                Sign In
+                Log In
               </button>
             </form>
 

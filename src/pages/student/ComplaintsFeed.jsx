@@ -298,16 +298,6 @@ async function handleAddComment(complaintId) {
             >
               My Complaints
             </button>
-            <button
-              onClick={() => setActiveTab("polls")}
-              className={`flex-1 py-2 px-4 rounded-lg shadow-sm text-sm text-center transition-all ${
-                activeTab === "polls"
-                  ? "bg-white dark:bg-card-dark text-primary font-semibold"
-                  : "text-text-sub-light dark:text-text-sub-dark hover:bg-white/50 dark:hover:bg-gray-700/50 font-medium"
-              }`}
-            >
-              Polls
-            </button>
           </div>
 
           {/* Category Filters */}
@@ -402,9 +392,6 @@ async function handleAddComment(complaintId) {
                       </span>
                     </div>
                   </div>
-                  <button className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                    <span className="material-icons-round">more_vert</span>
-                  </button>
                 </div>
 
                 {/* Content */}
