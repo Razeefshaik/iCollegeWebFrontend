@@ -1,12 +1,49 @@
+import { useEffect, useState } from "react";
+
 import StudentNavbar from "../../components/layout/StudentNavbar";
 import StudentFooter from "../../components/layout/StudentFooter";
 import StudentBottomNav from "../../components/layout/StudentBottomNav";
 import profileImage from "../../assets/images/profile-placeholder.png";
 
-
 import InfoCard from "../../components/profile/InfoCard";
+import { getMe } from "../../services/api";
 
 export default function Profile() {
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const data = await getMe();
+        setProfile(data);
+      } catch (err) {
+        setError(err.message || "Failed to load profile");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProfile();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500">
+        Loading profile...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-red-500">
+        {error}
+      </div>
+    );
+  }
+
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen font-display text-gray-800 dark:text-gray-200 pb-24 md:pb-10">
 
@@ -29,7 +66,7 @@ export default function Profile() {
               <div className="w-36 h-36 md:w-44 md:h-44 rounded-full p-1.5 bg-white dark:bg-card-dark shadow-xl ring-4 ring-gray-50 dark:ring-gray-800 overflow-hidden">
                 <img
                   src={profileImage}
-                  alt="Alex Johnson"
+                  alt={profile.name}
                   className="w-full h-full object-cover rounded-full group-hover:scale-105 transition-transform duration-500"
                 />
               </div>
@@ -47,19 +84,20 @@ export default function Profile() {
             {/* Name & Meta */}
             <div className="text-center mb-8">
               <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white mb-2">
-                Alex Johnson
+                {profile.name}
               </h1>
+
               <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">
-                Computer Science & Engineering
+                {profile.publicName}
               </p>
 
               <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-gray-400 dark:text-gray-500 font-medium">
                 <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
-                  ID: CS2023045
+                  ID: {profile.scholarId}
                 </span>
                 <span className="hidden md:block w-1 h-1 bg-gray-300 dark:bg-gray-600 rounded-full" />
                 <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
-                  3rd Year
+                  Role: {profile.role}
                 </span>
               </div>
             </div>
@@ -69,25 +107,25 @@ export default function Profile() {
               <InfoCard
                 icon="email"
                 label="Email Address"
-                value="alex.johnson@campus.edu"
+                value={profile.email}
                 color="blue"
               />
               <InfoCard
                 icon="call"
                 label="Phone Number"
-                value="+1 (555) 012-3456"
+                value="Not provided"
                 color="purple"
               />
               <InfoCard
                 icon="cake"
                 label="Date of Birth"
-                value="March 15, 2002"
+                value="Not provided"
                 color="green"
               />
               <InfoCard
                 icon="location_on"
                 label="Hostel Block"
-                value="Block C, Room 304"
+                value="Not provided"
                 color="orange"
               />
             </div>

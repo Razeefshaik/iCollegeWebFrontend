@@ -2,7 +2,7 @@ import { useState } from "react";
 import DarkModeToggle from "../../components/layout/DarkModeToggle";
 import "../../styles/globals.css";
 import { Link, useNavigate } from "react-router-dom";
-import { registerUser } from "../../services/api"; // ✅ ADDED
+import { registerUser } from "../../services/api";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -60,23 +60,22 @@ export default function Signup() {
     if (!validate()) return;
 
     try {
-      const res = await registerUser({
-        name: form.fullName,          // ✅ backend expects `name`
+      await registerUser({
+        name: form.fullName,
         publicName: form.publicName,
         email: form.email,
         password: form.password,
         scholarId: form.scholarId,
       });
 
-      // ✅ STORE JWT TOKEN
-      localStorage.setItem("token", res.token);
+      console.log("Signup successful, OTP sent");
 
-      // (Optional – keeps consistency with your app)
-      localStorage.setItem("isAuthenticated", "true");
-
-      console.log("Signup success");
-
-      navigate("/verify-otp", { state: { redirectTo: "/student/dashboard" } });
+      navigate("/verify-otp", {
+        state: {
+          scholarId: form.scholarId,
+          email: form.email,
+        },
+      });
     } catch (err) {
       console.error("Signup failed:", err.message);
       setErrors({ general: err.message });
