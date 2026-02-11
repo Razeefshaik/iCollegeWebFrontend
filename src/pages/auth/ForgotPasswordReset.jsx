@@ -2,6 +2,7 @@ import { useState } from "react";
 import DarkModeToggle from "../../components/layout/DarkModeToggle";
 import "../../styles/globals.css";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { resetPassword } from "../../services/api";
 
 export default function ForgotPasswordReset() {
   const navigate = useNavigate();
@@ -14,10 +15,12 @@ export default function ForgotPasswordReset() {
     confirmPassword: "",
   });
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleConfirm(e) {
+  async function handleConfirm(e) {
     e.preventDefault();
     setError("");
+
     if (!form.otp.trim()) {
       setError("Please enter the OTP");
       return;
@@ -34,16 +37,35 @@ export default function ForgotPasswordReset() {
       setError("Passwords do not match");
       return;
     }
-    // TODO: call reset-password API with scholarId, otp, newPassword when backend is ready
-    navigate("/login", { replace: true });
+
+    try {
+      setLoading(true);
+
+      await resetPassword({
+        scholarId: scholarId,
+        otp: form.otp,
+        newPassword: form.newPassword,
+      });
+
+      navigate("/login", { replace: true });
+    } catch (err) {
+      setError(err.message || "Failed to reset password");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (!scholarId) {
     return (
       <div className="bg-background-light dark:bg-background-dark min-h-screen flex items-center justify-center p-4">
         <div className="text-center">
-          <p className="text-gray-600 dark:text-gray-400 mb-4">Invalid request. Please start from Forgot password.</p>
-          <Link to="/forgot-password" className="text-primary font-semibold hover:text-primary-hover">
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            Invalid request. Please start from Forgot password.
+          </p>
+          <Link
+            to="/forgot-password"
+            className="text-primary font-semibold hover:text-primary-hover"
+          >
             Go to Forgot password
           </Link>
         </div>
@@ -63,10 +85,16 @@ export default function ForgotPasswordReset() {
           <div className="absolute bottom-[-50px] left-[-50px] w-48 h-48 bg-black opacity-10 rounded-full blur-2xl" />
           <div className="relative z-10 flex flex-col items-center">
             <div className="w-24 h-24 glass-circle rounded-full flex items-center justify-center mb-6 shadow-lg">
-              <span className="material-icons-round text-white text-5xl">vpn_key</span>
+              <span className="material-icons-round text-white text-5xl">
+                vpn_key
+              </span>
             </div>
-            <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">Gymkhana Connect</h1>
-            <p className="text-white text-opacity-90 text-lg font-medium">Student Voice & Dashboard</p>
+            <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">
+              Gymkhana Connect
+            </h1>
+            <p className="text-white text-opacity-90 text-lg font-medium">
+              Student Voice & Dashboard
+            </p>
             <p className="text-white text-opacity-70 mt-8 max-w-sm text-sm">
               Enter the OTP sent to your email and set a new password.
             </p>
@@ -76,7 +104,9 @@ export default function ForgotPasswordReset() {
         {/* RIGHT PANEL */}
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-card-light dark:bg-card-dark">
           <div className="w-full max-w-md mx-auto">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Reset Password</h2>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Reset Password
+            </h2>
             <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm">
               Enter OTP and your new password
             </p>
@@ -90,13 +120,17 @@ export default function ForgotPasswordReset() {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="material-icons-round text-gray-400 text-xl">pin</span>
+                    <span className="material-icons-round text-gray-400 text-xl">
+                      pin
+                    </span>
                   </div>
                   <input
                     type="text"
                     placeholder="Enter OTP"
                     value={form.otp}
-                    onChange={(e) => setForm({ ...form, otp: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, otp: e.target.value })
+                    }
                     className="block w-full pl-10 pr-3 py-3 rounded-xl bg-input-bg-light dark:bg-input-bg-dark border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary"
                   />
                 </div>
@@ -108,13 +142,17 @@ export default function ForgotPasswordReset() {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="material-icons-round text-gray-400 text-xl">lock_outline</span>
+                    <span className="material-icons-round text-gray-400 text-xl">
+                      lock_outline
+                    </span>
                   </div>
                   <input
                     type="password"
                     placeholder="••••••••"
                     value={form.newPassword}
-                    onChange={(e) => setForm({ ...form, newPassword: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, newPassword: e.target.value })
+                    }
                     className="block w-full pl-10 pr-3 py-3 rounded-xl bg-input-bg-light dark:bg-input-bg-dark border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary"
                   />
                 </div>
@@ -126,13 +164,17 @@ export default function ForgotPasswordReset() {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="material-icons-round text-gray-400 text-xl">lock_reset</span>
+                    <span className="material-icons-round text-gray-400 text-xl">
+                      lock_reset
+                    </span>
                   </div>
                   <input
                     type="password"
                     placeholder="••••••••"
                     value={form.confirmPassword}
-                    onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+                    onChange={(e) =>
+                      setForm({ ...form, confirmPassword: e.target.value })
+                    }
                     className="block w-full pl-10 pr-3 py-3 rounded-xl bg-input-bg-light dark:bg-input-bg-dark border border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-primary focus:border-primary"
                   />
                 </div>
@@ -140,14 +182,18 @@ export default function ForgotPasswordReset() {
 
               <button
                 type="submit"
-                className="w-full flex justify-center py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-hover"
+                disabled={loading}
+                className="w-full flex justify-center py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-hover disabled:opacity-70"
               >
-                Confirm
+                {loading ? "Resetting..." : "Confirm"}
               </button>
             </form>
 
             <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-              <Link to="/login" className="font-bold text-primary hover:text-primary-hover">
+              <Link
+                to="/login"
+                className="font-bold text-primary hover:text-primary-hover"
+              >
                 Back to Log in
               </Link>
             </p>

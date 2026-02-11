@@ -2,20 +2,36 @@ import { useState } from "react";
 import DarkModeToggle from "../../components/layout/DarkModeToggle";
 import "../../styles/globals.css";
 import { Link, useNavigate } from "react-router-dom";
+import { forgotPassword } from "../../services/api";
 
 export default function ForgotPassword() {
   const navigate = useNavigate();
   const [scholarId, setScholarId] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleProceed(e) {
+  async function handleProceed(e) {
     e.preventDefault();
     setError("");
+
     if (!scholarId.trim()) {
       setError("Scholar ID is required");
       return;
     }
-    navigate("/forgot-password/reset", { state: { scholarId: scholarId.trim() } });
+
+    try {
+      setLoading(true);
+
+      await forgotPassword(scholarId.trim());
+
+      navigate("/forgot-password/reset", {
+        state: { scholarId: scholarId.trim() },
+      });
+    } catch (err) {
+      setError(err.message || "Failed to send reset OTP");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -30,10 +46,16 @@ export default function ForgotPassword() {
           <div className="absolute bottom-[-50px] left-[-50px] w-48 h-48 bg-black opacity-10 rounded-full blur-2xl" />
           <div className="relative z-10 flex flex-col items-center">
             <div className="w-24 h-24 glass-circle rounded-full flex items-center justify-center mb-6 shadow-lg">
-              <span className="material-icons-round text-white text-5xl">lock_reset</span>
+              <span className="material-icons-round text-white text-5xl">
+                lock_reset
+              </span>
             </div>
-            <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">Gymkhana Connect</h1>
-            <p className="text-white text-opacity-90 text-lg font-medium">Student Voice & Dashboard</p>
+            <h1 className="text-4xl font-bold text-white mb-3 tracking-tight">
+              Gymkhana Connect
+            </h1>
+            <p className="text-white text-opacity-90 text-lg font-medium">
+              Student Voice & Dashboard
+            </p>
             <p className="text-white text-opacity-70 mt-8 max-w-sm text-sm">
               Reset your password. Works for both admin and student accounts.
             </p>
@@ -43,7 +65,9 @@ export default function ForgotPassword() {
         {/* RIGHT PANEL */}
         <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col justify-center bg-card-light dark:bg-card-dark">
           <div className="w-full max-w-md mx-auto">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Forgot Password</h2>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Forgot Password
+            </h2>
             <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm">
               Enter your Scholar ID to receive a reset OTP
             </p>
@@ -57,7 +81,9 @@ export default function ForgotPassword() {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="material-icons-round text-gray-400 text-xl">person_outline</span>
+                    <span className="material-icons-round text-gray-400 text-xl">
+                      person_outline
+                    </span>
                   </div>
                   <input
                     type="text"
@@ -71,14 +97,18 @@ export default function ForgotPassword() {
 
               <button
                 type="submit"
-                className="w-full flex justify-center py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-hover"
+                disabled={loading}
+                className="w-full flex justify-center py-3.5 px-4 rounded-xl text-sm font-bold text-white bg-primary hover:bg-primary-hover disabled:opacity-70"
               >
-                Proceed
+                {loading ? "Sending OTP..." : "Proceed"}
               </button>
             </form>
 
             <p className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-              <Link to="/login" className="font-bold text-primary hover:text-primary-hover">
+              <Link
+                to="/login"
+                className="font-bold text-primary hover:text-primary-hover"
+              >
                 Back to Log in
               </Link>
             </p>

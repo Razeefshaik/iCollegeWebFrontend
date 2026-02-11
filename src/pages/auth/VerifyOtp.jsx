@@ -2,41 +2,78 @@ import { useState } from "react";
 import DarkModeToggle from "../../components/layout/DarkModeToggle";
 import "../../styles/globals.css";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import { verifyOtp, resendOtp } from "../../services/api";
 
 export default function VerifyOtp() {
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectTo = location.state?.redirectTo || "/student/dashboard";
+
+  const scholarId = location.state?.scholarId;
 
   const [otp, setOtp] = useState("");
   const [error, setError] = useState("");
   const [resendMessage, setResendMessage] = useState("");
   const [resendCooldown, setResendCooldown] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-  function handleProceed(e) {
+  /* ---------- VERIFY OTP ---------- */
+  async function handleProceed(e) {
     e.preventDefault();
     setError("");
+
     if (!otp.trim()) {
       setError("Please enter the OTP");
       return;
     }
-    // TODO: call verify OTP API when backend is ready; for now proceed to dashboard
-    navigate(redirectTo, { replace: true });
+
+    if (!scholarId) {
+      setError("Invalid request. Please signup again.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+
+      await verifyOtp({
+        scholarId,
+        otp,
+      });
+
+      // ❗ DO NOT store token here
+      // Backend usually activates account after OTP
+      // User should now login manually
+
+      navigate("/login", { replace: true });
+
+    } catch (err) {
+      setError(err.message || "OTP verification failed");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function handleResend() {
-    if (resendCooldown > 0) return;
-    setResendMessage("OTP sent to your email.");
-    setResendCooldown(60);
-    const interval = setInterval(() => {
-      setResendCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+  /* ---------- RESEND OTP ---------- */
+  async function handleResend() {
+    if (resendCooldown > 0 || !scholarId) return;
+
+    try {
+      await resendOtp(scholarId);
+      setResendMessage("OTP sent to your email.");
+
+      setResendCooldown(60);
+      const interval = setInterval(() => {
+        setResendCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+    } catch (err) {
+      setError(err.message || "Failed to resend OTP");
+    }
   }
 
   return (
@@ -134,26 +171,35 @@ export default function VerifyOtp() {
                   disabled={resendCooldown > 0}
                   className="text-primary font-semibold hover:text-primary-hover disabled:text-gray-400 disabled:cursor-not-allowed"
                 >
-                  {resendCooldown > 0 ? `Resend OTP (${resendCooldown}s)` : "Resend OTP"}
+                  {resendCooldown > 0
+                    ? `Resend OTP (${resendCooldown}s)`
+                    : "Resend OTP"}
                 </button>
               </div>
 
               {resendMessage && (
-                <p className="text-sm text-green-600 dark:text-green-400">{resendMessage}</p>
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  {resendMessage}
+                </p>
               )}
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-colors"
+                disabled={loading}
+                className="w-full py-3.5 rounded-xl bg-primary text-white font-bold hover:bg-primary-hover transition-colors disabled:opacity-70"
               >
-                Proceed
+                {loading ? "Verifying..." : "Proceed"}
               </button>
 
               <p className="text-sm text-center text-gray-500 dark:text-gray-400">
-                <Link to="/forgot-password" className="text-primary font-medium hover:text-primary-hover">
+                <Link
+                  to="/forgot-password"
+                  className="text-primary font-medium hover:text-primary-hover"
+                >
                   Forgot password?
                 </Link>
               </p>
+
             </form>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import profileImage from "../../assets/images/profile-placeholder.png";
 
+
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState("dashboard");
@@ -34,7 +35,9 @@ export default function AdminDashboard() {
             icon="person"
             label="Profile"
             isActive={activeNav === "profile"}
-            onClick={() => setActiveNav("profile")}
+            onClick={() => {
+            setActiveNav("profile");
+            navigate("/student/profile");}}
           />
           <NavItem
             icon="settings"

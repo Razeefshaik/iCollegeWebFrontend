@@ -2,7 +2,7 @@ import { useState } from "react";
 import DarkModeToggle from "../../components/layout/DarkModeToggle";
 import "../../styles/globals.css";
 import { Link, useNavigate } from "react-router-dom";
-import { loginUser } from "../../services/api"; // ✅ ADDED
+import { loginUser, getMe } from "../../services/api"; 
 
 export default function Login() {
   /* ---------- STATE ---------- */
@@ -39,16 +39,27 @@ export default function Login() {
     if (!validate()) return;
 
     try {
+      // 1️⃣ Login
       const res = await loginUser({
         scholarId: form.scholarId,
         password: form.password,
       });
 
+      // 2️⃣ Store token
       localStorage.setItem("token", res.token);
       localStorage.setItem("isAuthenticated", "true");
 
-      const redirectTo = res.role === "ADMIN" ? "/admin/dashboard" : "/student/dashboard";
+      // 3️⃣ Get real user profile
+      const user = await getMe();
+
+      // 4️⃣ Redirect based on backend role
+      const redirectTo =
+        user.role === "ADMIN"
+          ? "/admin/dashboard"
+          : "/student/dashboard";
+
       navigate(redirectTo);
+
     } catch (err) {
       console.error("Login failed:", err.message);
       setErrors({ general: err.message });
