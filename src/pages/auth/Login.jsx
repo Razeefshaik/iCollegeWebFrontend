@@ -52,6 +52,11 @@ export default function Login() {
       // 3️⃣ Get real user profile
       const user = await getMe();
 
+      // Persist role for route protection (e.g. ADMIN vs STUDENT)
+      if (user?.role) {
+        localStorage.setItem("userRole", user.role);
+      }
+
       // 4️⃣ Redirect based on backend role
       const redirectTo =
         user.role === "ADMIN"

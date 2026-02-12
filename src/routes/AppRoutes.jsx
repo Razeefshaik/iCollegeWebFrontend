@@ -17,6 +17,7 @@ import Announcements from "../pages/student/Announcements";
 import OpinionPolls from "../pages/student/OpinionPolls";
 import PollDetail from "../pages/student/PollDetail";
 import AdminDashboard from "../pages/admin/AdminDashboard";
+import AdminProfile from "../pages/admin/AdminProfile";
 import NewOpinionPoll from "../pages/admin/NewOpinionPoll";
 import ProtectedRoute from "./ProtectedRoute";
 import AnnouncementDetail from "../pages/student/AnnouncementDetail";
@@ -120,12 +121,21 @@ export default function AppRoutes() {
         }
       />
 
-      {/* Admin */}
+      {/* Admin – only for ADMIN role */}
       <Route
         path="/admin/dashboard"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="ADMIN">
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/admin/profile"
+        element={
+          <ProtectedRoute requiredRole="ADMIN">
+            <AdminProfile />
           </ProtectedRoute>
         }
       />
@@ -133,7 +143,7 @@ export default function AppRoutes() {
       <Route
         path="/admin/new-opinion-poll"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="ADMIN">
             <NewOpinionPoll />
           </ProtectedRoute>
         }
@@ -142,7 +152,7 @@ export default function AppRoutes() {
       <Route 
         path="/admin/new-announcement" 
         element={
-          <ProtectedRoute>
+          <ProtectedRoute requiredRole="ADMIN">
             <NewAnnouncement />
           </ProtectedRoute>
         }

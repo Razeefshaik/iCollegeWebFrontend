@@ -18,9 +18,15 @@ export default function OpinionPolls() {
   const [backendPolls, setBackendPolls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const userRole = localStorage.getItem("userRole");
 
   function handleBack() {
-    navigate("/student/dashboard");
+    const role = localStorage.getItem("userRole");
+    if (role === "ADMIN") {
+      navigate("/admin/dashboard");
+    } else {
+      navigate("/student/dashboard");
+    }
   }
 
   const fetchPolls = useCallback(async () => {
@@ -196,8 +202,8 @@ export default function OpinionPolls() {
 
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen font-display text-gray-800 dark:text-gray-200 pb-24 md:pb-10">
-      {/* TOP NAVBAR */}
-      <StudentNavbar />
+      {/* TOP NAVBAR (only for students) */}
+      {userRole !== "ADMIN" && <StudentNavbar />}
 
       {/* MAIN CONTENT */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -481,11 +487,11 @@ export default function OpinionPolls() {
         )}
       </main>
 
-      {/* DESKTOP FOOTER */}
-      <StudentFooter />
+      {/* DESKTOP FOOTER (only for students) */}
+      {userRole !== "ADMIN" && <StudentFooter />}
 
-      {/* MOBILE BOTTOM NAV */}
-      <StudentBottomNav />
+      {/* MOBILE BOTTOM NAV (only for students) */}
+      {userRole !== "ADMIN" && <StudentBottomNav />}
     </div>
   );
 }

@@ -174,7 +174,14 @@ export default function Announcements() {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
               <button 
-                onClick={() => navigate("/student/dashboard")}
+                onClick={() => {
+                  const role = localStorage.getItem("userRole");
+                  if (role === "ADMIN") {
+                    navigate("/admin/dashboard");
+                  } else {
+                    navigate("/student/dashboard");
+                  }
+                }}
                 className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400"
               >
                 <span className="material-icons-round">arrow_back_ios</span>
@@ -239,7 +246,11 @@ export default function Announcements() {
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20"></div>
             <div className="absolute inset-0 p-6 md:p-10 flex flex-col justify-between">
               <div className="flex justify-between">
-                <span className="px-3 py-1 rounded-md text-xs font-bold bg-[#EF231C] text-white">GENERAL</span>
+                {pinnedAnnouncement.category && (
+                  <span className="px-3 py-1 rounded-md text-xs font-bold bg-[#EF231C] text-white">
+                    {pinnedAnnouncement.category}
+                  </span>
+                )}
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white text-[#EF231C]">
                   <span className="material-icons-round text-sm mr-1">push_pin</span> Important
                 </span>

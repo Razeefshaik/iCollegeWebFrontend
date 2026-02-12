@@ -36,8 +36,9 @@ export default function AdminDashboard() {
             label="Profile"
             isActive={activeNav === "profile"}
             onClick={() => {
-            setActiveNav("profile");
-            navigate("/student/profile");}}
+              setActiveNav("profile");
+              navigate("/admin/profile");
+            }}
           />
           <NavItem
             icon="settings"
@@ -169,7 +170,7 @@ export default function AdminDashboard() {
                     title="Student Opinions"
                     description="Suggestions (e.g. DJ Night)"
                     color="purple"
-                    onClick={() => console.log("Student Opinions")}
+                    onClick={() => navigate("/student/opinion-polls")}
                   />
                   <QuickAccessItem
                     icon="handshake"

@@ -11,6 +11,7 @@ export default function PollDetail() {
   const location = useLocation();
   const [submitting, setSubmitting] = useState(false);
   const [poll, setPoll] = useState(location.state?.poll ?? null);
+  const userRole = localStorage.getItem("userRole");
 
   const initialPoll = poll;
 
@@ -106,8 +107,8 @@ export default function PollDetail() {
 
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen font-display text-gray-800 dark:text-gray-200 pb-24 md:pb-10">
-      {/* TOP NAVBAR */}
-      <StudentNavbar />
+      {/* TOP NAVBAR (only for students) */}
+      {userRole !== "ADMIN" && <StudentNavbar />}
 
       {/* HEADER */}
       <header className="sticky top-16 z-40 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
@@ -253,11 +254,11 @@ export default function PollDetail() {
         </div>
       </main>
 
-      {/* DESKTOP FOOTER */}
-      <StudentFooter />
+      {/* DESKTOP FOOTER (only for students) */}
+      {userRole !== "ADMIN" && <StudentFooter />}
 
-      {/* MOBILE BOTTOM NAV */}
-      <StudentBottomNav />
+      {/* MOBILE BOTTOM NAV (only for students) */}
+      {userRole !== "ADMIN" && <StudentBottomNav />}
     </div>
   );
 }
