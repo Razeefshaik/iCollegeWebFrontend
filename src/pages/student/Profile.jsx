@@ -12,12 +12,29 @@ export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    publicName: "",
+    email: "",
+    phone: "",
+    dob: "",
+    hostelBlock: "",
+  });
 
   useEffect(() => {
     async function fetchProfile() {
       try {
         const data = await getMe();
         setProfile(data);
+        setForm({
+          name: data.name || "",
+          publicName: data.publicName || "",
+          email: data.email || "",
+          phone: "",
+          dob: "",
+          hostelBlock: "",
+        });
       } catch (err) {
         setError(err.message || "Failed to load profile");
       } finally {
@@ -83,15 +100,37 @@ export default function Profile() {
 
             {/* Name & Meta */}
             <div className="text-center mb-8">
-              <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white mb-2">
-                {profile.name}
-              </h1>
+              {isEditing ? (
+                <div className="space-y-3 w-full max-w-md">
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-card-dark text-gray-900 dark:text-white text-center font-extrabold text-2xl"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Full name"
+                  />
+                  <input
+                    type="text"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-card-dark text-gray-700 dark:text-gray-300 text-center"
+                    value={form.publicName}
+                    onChange={(e) =>
+                      setForm({ ...form, publicName: e.target.value })
+                    }
+                    placeholder="Public name"
+                  />
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white mb-2">
+                    {profile.name}
+                  </h1>
+                  <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">
+                    {profile.publicName}
+                  </p>
+                </>
+              )}
 
-              <p className="text-gray-500 dark:text-gray-400 text-lg mb-4">
-                {profile.publicName}
-              </p>
-
-              <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-gray-400 dark:text-gray-500 font-medium">
+              <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-gray-400 dark:text-gray-500 font-medium mt-3">
                 <span className="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full">
                   ID: {profile.scholarId}
                 </span>
@@ -104,39 +143,137 @@ export default function Profile() {
 
             {/* Info Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl mb-10">
-              <InfoCard
-                icon="email"
-                label="Email Address"
-                value={profile.email}
-                color="blue"
-              />
-              <InfoCard
-                icon="call"
-                label="Phone Number"
-                value="Not provided"
-                color="purple"
-              />
-              <InfoCard
-                icon="cake"
-                label="Date of Birth"
-                value="Not provided"
-                color="green"
-              />
-              <InfoCard
-                icon="location_on"
-                label="Hostel Block"
-                value="Not provided"
-                color="orange"
-              />
+              {isEditing ? (
+                <>
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide">
+                      Email Address
+                    </p>
+                    <input
+                      type="email"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-card-dark text-gray-900 dark:text-white"
+                      value={form.email}
+                      onChange={(e) =>
+                        setForm({ ...form, email: e.target.value })
+                      }
+                      placeholder="Email address"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide">
+                      Phone Number
+                    </p>
+                    <input
+                      type="tel"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-card-dark text-gray-900 dark:text-white"
+                      value={form.phone}
+                      onChange={(e) =>
+                        setForm({ ...form, phone: e.target.value })
+                      }
+                      placeholder="Phone number"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide">
+                      Date of Birth
+                    </p>
+                    <input
+                      type="date"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-card-dark text-gray-900 dark:text-white"
+                      value={form.dob}
+                      onChange={(e) => setForm({ ...form, dob: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-400 uppercase font-semibold tracking-wide">
+                      Hostel Block
+                    </p>
+                    <input
+                      type="text"
+                      className="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-card-dark text-gray-900 dark:text-white"
+                      value={form.hostelBlock}
+                      onChange={(e) =>
+                        setForm({ ...form, hostelBlock: e.target.value })
+                      }
+                      placeholder="Hostel block"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <InfoCard
+                    icon="email"
+                    label="Email Address"
+                    value={profile.email}
+                    color="blue"
+                  />
+                  <InfoCard
+                    icon="call"
+                    label="Phone Number"
+                    value={form.phone || "Not provided"}
+                    color="purple"
+                  />
+                  <InfoCard
+                    icon="cake"
+                    label="Date of Birth"
+                    value={form.dob || "Not provided"}
+                    color="green"
+                  />
+                  <InfoCard
+                    icon="location_on"
+                    label="Hostel Block"
+                    value={form.hostelBlock || "Not provided"}
+                    color="orange"
+                  />
+                </>
+              )}
             </div>
 
-            {/* Edit Button */}
-            <button className="group flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 px-6 py-2.5 rounded-full font-semibold transition-all hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md active:scale-95">
-              <span className="material-icons-round text-gray-400 group-hover:text-primary transition-colors">
-                edit
-              </span>
-              <span>Edit Profile</span>
-            </button>
+            {/* Edit / Save Buttons */}
+            <div className="flex gap-3">
+              <button
+                className="group flex items-center gap-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 px-6 py-2.5 rounded-full font-semibold transition-all hover:bg-gray-50 dark:hover:bg-gray-700 hover:shadow-md active:scale-95"
+                type="button"
+                onClick={() => {
+                  if (isEditing) {
+                    // For now, just update the local profile view.
+                    setProfile((prev) => ({
+                      ...prev,
+                      name: form.name,
+                      publicName: form.publicName,
+                      email: form.email,
+                    }));
+                  }
+                  setIsEditing(!isEditing);
+                }}
+              >
+                <span className="material-icons-round text-gray-400 group-hover:text-primary transition-colors">
+                  {isEditing ? "check" : "edit"}
+                </span>
+                <span>{isEditing ? "Save" : "Edit Profile"}</span>
+              </button>
+
+              {isEditing && (
+                <button
+                  type="button"
+                  className="px-6 py-2.5 rounded-full font-semibold border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 active:scale-95 transition-all"
+                  onClick={() => {
+                    // Reset form back to profile values and exit edit mode
+                    setForm({
+                      name: profile.name || "",
+                      publicName: profile.publicName || "",
+                      email: profile.email || "",
+                      phone: form.phone,
+                      dob: form.dob,
+                      hostelBlock: form.hostelBlock,
+                    });
+                    setIsEditing(false);
+                  }}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
 
           </div>
         </div>

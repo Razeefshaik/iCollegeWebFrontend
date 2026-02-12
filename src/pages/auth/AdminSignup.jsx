@@ -4,6 +4,8 @@ import "../../styles/globals.css";
 import { Link, useNavigate } from "react-router-dom";
 import { registerAdmin } from "../../services/api";
 
+const ADMIN_PASSKEY = "dev-key-123";
+
 export default function AdminSignup() {
   const navigate = useNavigate();
 
@@ -46,7 +48,10 @@ export default function AdminSignup() {
     }
 
     if (!form.secretPasskey.trim()) {
-      newErrors.secretPasskey = "Secret passkey is required for admin registration";
+      newErrors.secretPasskey =
+        "Secret passkey is required for admin registration";
+    } else if (form.secretPasskey.trim() !== ADMIN_PASSKEY) {
+      newErrors.secretPasskey = "Invalid secret passkey";
     }
 
     if (!form.acceptedTerms) {

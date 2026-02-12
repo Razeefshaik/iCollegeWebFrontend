@@ -1,22 +1,53 @@
-import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import StudentNavbar from "../../components/layout/StudentNavbar";
 import StudentBottomNav from "../../components/layout/StudentBottomNav";
 import StudentFooter from "../../components/layout/StudentFooter";
 import O1Image from "../../assets/images/O1.png";
 import O2Image from "../../assets/images/O2.png";
 import O3Image from "../../assets/images/O3.png";
+import { getAllPolls } from "../../services/api";
+
+const OPINION_POLLS_LIST_PATH = "/student/opinion-polls";
 
 export default function OpinionPolls() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("ongoing");
   const [searchQuery, setSearchQuery] = useState("");
+  const [backendPolls, setBackendPolls] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   function handleBack() {
     navigate("/student/dashboard");
   }
 
-  // Active polls data
+  const fetchPolls = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await getAllPolls();
+      setBackendPolls(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to load polls:", err);
+      setError(err.message || "Failed to load polls");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Fetch when on list page (initial load and when returning from poll detail)
+  useEffect(() => {
+    const path = location.pathname;
+    if (path === OPINION_POLLS_LIST_PATH || path === OPINION_POLLS_LIST_PATH + "/") {
+      fetchPolls();
+    }
+  }, [location.pathname, fetchPolls]);
+
+  // --- STATIC FALLBACK DATA (kept so we don't break UI if backend is empty/down) ---
+
+  // Active polls data (fallback)
   const allActivePolls = [
     {
       id: 1,
@@ -44,7 +75,7 @@ export default function OpinionPolls() {
     },
   ];
 
-  // Recently closed polls
+  // Recently closed polls (fallback)
   const allClosedPolls = [
     {
       id: 1,
@@ -66,30 +97,102 @@ export default function OpinionPolls() {
     },
   ];
 
+  // Backend does not send "active" – derive from expiresAt
+  function isPollActive(poll) {
+    if (!poll.expiresAt) return false;
+    const expires = new Date(poll.expiresAt);
+    return !Number.isNaN(expires.getTime()) && expires > new Date();
+  }
+
+  // Sum votes from backend voteCounts (map) or votes array
+  function getTotalVotes(poll) {
+    if (typeof poll.totalVotes === "number") return poll.totalVotes;
+    if (Array.isArray(poll.votes)) return poll.votes.reduce((s, v) => s + v, 0);
+    const vc = poll.voteCounts;
+    if (vc && typeof vc === "object")
+      return Object.values(vc).reduce((s, v) => s + Number(v || 0), 0);
+    return 0;
+  }
+
+  function mapBackendPollToCard(poll) {
+    const now = new Date();
+    const expires = poll.expiresAt ? new Date(poll.expiresAt) : null;
+
+    let timeLeft = "";
+    if (expires && !Number.isNaN(expires.getTime())) {
+      const diffMs = expires - now;
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      if (diffMs <= 0) {
+        timeLeft = "Closed";
+      } else if (diffHours < 24) {
+        timeLeft = `${diffHours}h left`;
+      } else {
+        const days = Math.floor(diffHours / 24);
+        timeLeft = `${days}d left`;
+      }
+    }
+
+    const totalVotes = getTotalVotes(poll);
+
+    return {
+      id: poll.id,
+      category: isPollActive(poll) ? "Active" : "Closed",
+      title: poll.question,
+      image: O1Image,
+      participation: `${totalVotes} votes`,
+      timeLeft: timeLeft || (isPollActive(poll) ? "Active" : "Closed"),
+      raw: poll,
+    };
+  }
+
+  const backendActiveCards = (backendPolls || [])
+    .filter((p) => isPollActive(p))
+    .map(mapBackendPollToCard);
+
+  const backendClosedCards = (backendPolls || [])
+    .filter((p) => !isPollActive(p))
+    .map((poll) => {
+      const totalVotes = getTotalVotes(poll);
+      return {
+        id: poll.id,
+        category: "Poll",
+        timeAgo: poll.expiresAt ? "Closed" : "Closed",
+        title: poll.question,
+        result: "Closed",
+        percentage: 100,
+        votes: `${totalVotes} votes`,
+        raw: poll,
+      };
+    });
+
+  // Use backend data when available; only show static fallback when done loading and API returned empty
+  const sourceActive = loading ? [] : (backendActiveCards.length ? backendActiveCards : allActivePolls);
+  const sourceClosed = loading ? [] : (backendClosedCards.length ? backendClosedCards : allClosedPolls);
+
   // Filter polls based on search query
   const activePolls = useMemo(() => {
     if (!searchQuery.trim()) {
-      return allActivePolls;
+      return sourceActive;
     }
     const query = searchQuery.toLowerCase();
-    return allActivePolls.filter(
+    return sourceActive.filter(
       (poll) =>
         poll.title.toLowerCase().includes(query) ||
         poll.category.toLowerCase().includes(query)
     );
-  }, [searchQuery, allActivePolls]);
+  }, [searchQuery, sourceActive]);
 
   const closedPolls = useMemo(() => {
     if (!searchQuery.trim()) {
-      return allClosedPolls;
+      return sourceClosed;
     }
     const query = searchQuery.toLowerCase();
-    return allClosedPolls.filter(
+    return sourceClosed.filter(
       (poll) =>
         poll.title.toLowerCase().includes(query) ||
         poll.category.toLowerCase().includes(query)
     );
-  }, [searchQuery, allClosedPolls]);
+  }, [searchQuery, sourceClosed]);
 
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen font-display text-gray-800 dark:text-gray-200 pb-24 md:pb-10">
@@ -161,11 +264,26 @@ export default function OpinionPolls() {
             <div className="flex justify-between items-center mb-8">
               <div className="flex items-center gap-3">
                 <h2 className="text-2xl font-bold">Active Polls</h2>
-                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 uppercase tracking-wider">
-                  3 New
-                </span>
+                {!loading && activePolls.length > 0 && (
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 uppercase tracking-wider">
+                    {activePolls.length} New
+                  </span>
+                )}
               </div>
             </div>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="bg-card-light dark:bg-card-dark rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-pulse">
+                    <div className="h-48 bg-slate-200 dark:bg-slate-700" />
+                    <div className="p-6">
+                      <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-4" />
+                      <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {activePolls.map((poll) => (
                 <div
@@ -204,7 +322,11 @@ export default function OpinionPolls() {
                         </p>
                       </div>
                       <button
-                        onClick={() => navigate(`/student/opinion-polls/${poll.id}`)}
+                        onClick={() =>
+                          navigate(`/student/opinion-polls/${poll.id}`, {
+                            state: { poll: poll.raw || null },
+                          })
+                        }
                         className="bg-primary hover:bg-blue-700 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-colors shadow-lg shadow-blue-600/20"
                       >
                         Vote Now
@@ -214,6 +336,7 @@ export default function OpinionPolls() {
                 </div>
               ))}
             </div>
+            )}
           </section>
         )}
 
@@ -229,6 +352,17 @@ export default function OpinionPolls() {
                 View All
               </a>
             </div>
+            {loading ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {[1, 2].map((i) => (
+                  <div key={i} className="bg-card-light dark:bg-card-dark p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm animate-pulse">
+                    <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3 mb-4" />
+                    <div className="h-6 bg-slate-200 dark:bg-slate-700 rounded w-full mb-6" />
+                    <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded w-full" />
+                  </div>
+                ))}
+              </div>
+            ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {closedPolls.map((poll) => (
                 <div
@@ -281,6 +415,7 @@ export default function OpinionPolls() {
                 </div>
               ))}
             </div>
+            )}
           </section>
         )}
 

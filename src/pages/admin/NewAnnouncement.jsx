@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createAnnouncement } from "../../services/api";
 
 export default function NewAnnouncement() {
   const navigate = useNavigate();
@@ -8,18 +9,35 @@ export default function NewAnnouncement() {
     title: "",
     content: "",
   });
+  const [submitting, setSubmitting] = useState(false);
 
-  const categories = ["General", "Academic", "Sports", "Events"];
+  // Match categories shown on student side
+  const categories = ["General", "Academic", "Hostel", "Events", "Placement"];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Publishing Announcement:", { 
-      ...formData, 
-      category: activeCategory,
-      timestamp: new Date().toISOString() 
-    });
-    
-    navigate("/admin/dashboard");
+    if (submitting) return;
+
+    try {
+      setSubmitting(true);
+
+      // Backend AnnouncementRequest: title, content, category, imageUrl, isUrgent
+      const payload = {
+        title: formData.title,
+        content: formData.content,
+        category: activeCategory,
+        imageUrl: "",
+        isUrgent: false,
+      };
+
+      await createAnnouncement(payload);
+      navigate("/admin/dashboard");
+    } catch (err) {
+      // Keep it simple so we don't disturb other UI
+      alert(err.message || "Failed to create announcement");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -141,10 +159,11 @@ export default function NewAnnouncement() {
               <div className="max-w-md mx-auto">
                 <button
                   type="submit"
-                  className="w-full flex items-center justify-center gap-3 bg-blue-600 text-white py-5 px-8 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-blue-500/40 transition-all transform active:scale-[0.98]"
+                  disabled={submitting}
+                  className="w-full flex items-center justify-center gap-3 bg-blue-600 text-white py-5 px-8 rounded-2xl font-bold text-lg hover:shadow-2xl hover:shadow-blue-500/40 transition-all transform active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <span className="material-symbols-outlined">send</span>
-                  Publish Announcement
+                  {submitting ? "Publishing..." : "Publish Announcement"}
                 </button>
               </div>
             </div>

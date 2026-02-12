@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import StudentNavbar from "../../components/layout/StudentNavbar";
 import StudentFooter from "../../components/layout/StudentFooter";
 import StudentBottomNav from "../../components/layout/StudentBottomNav";
@@ -6,9 +7,26 @@ import { useNavigate } from "react-router-dom";
 import DashboardCard from "../../components/dashboard/DashboardCard";
 import TagButton from "../../components/dashboard/TagButton";
 import ActionLink from "../../components/dashboard/ActionLink";
+import { getMe } from "../../services/api";
 
 export default function StudentDashboard() {
   const navigate = useNavigate();
+  const [profile, setProfile] = useState(null);
+
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const data = await getMe();
+        setProfile(data);
+      } catch (err) {
+        console.error("Failed to load profile for dashboard:", err);
+      }
+    }
+
+    fetchProfile();
+  }, []);
+
+  const userName = profile?.name || "Student";
 
   return (
     <div className="bg-background-light dark:bg-background-dark min-h-screen font-display text-gray-800 dark:text-gray-200 pb-24 md:pb-10">
@@ -22,7 +40,7 @@ export default function StudentDashboard() {
         {/* Greeting */}
         <div className="mb-10">
           <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 dark:text-white mb-2 flex items-center gap-3">
-            Hello, Alex <span className="animate-bounce">👋</span>
+            Hello, {userName} <span className="animate-bounce">👋</span>
           </h1>
           <p className="text-gray-500 dark:text-gray-400 text-lg max-w-2xl">
             Welcome to your student dashboard. What would you like to do today?

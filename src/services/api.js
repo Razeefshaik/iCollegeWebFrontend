@@ -1,5 +1,5 @@
 // ==========================
-// API Base URL
+// API Base URL (deployed backend)
 // ==========================
 const BASE_URL = "https://vivacious-lita-razeef-0c7e7706.koyeb.app";
 
@@ -55,9 +55,17 @@ async function apiRequest(endpoint, options = {}) {
     const response = await fetch(url, config);
 
     if (!response.ok) {
-      const errorData = await parseResponse(response);
+      let errorData;
+      try {
+        errorData = await parseResponse(response);
+      } catch (_) {
+        errorData = null;
+      }
+      const msg =
+        (errorData && typeof errorData === "object" && (errorData.message || errorData.error)) ||
+        (typeof errorData === "string" && errorData.length < 200 ? errorData : null);
       const errorMessage =
-        errorData?.message || errorData?.error || errorData || "Request failed";
+        msg || `Request failed (${response.status} ${response.statusText})`;
 
       if (response.status === 401) {
         localStorage.removeItem("token");
@@ -68,6 +76,11 @@ async function apiRequest(endpoint, options = {}) {
 
     return await parseResponse(response);
   } catch (error) {
+    if (error.message === "Failed to fetch") {
+      throw new Error(
+        "Cannot reach server. Check your internet and that the backend is running at " + BASE_URL
+      );
+    }
     console.error("API Request Error:", error);
     throw error;
   }
@@ -210,6 +223,52 @@ export async function getMe() {
 }
 
 // =====================================================
+// POLLS MODULE (AUTH REQUIRED)
+// =====================================================
+
+// Get all polls (active + expired)
+// GET /polls/all
+export async function getAllPolls() {
+  return apiRequest("/polls/all");
+}
+
+// Vote on a poll
+// POST /polls/{pollId}/vote?optionIndex=0
+export async function voteOnPoll(pollId, optionIndex) {
+  return apiRequest(`/polls/${pollId}/vote?optionIndex=${optionIndex}`, {
+    method: "POST",
+  });
+}
+
+// Create poll (admin only) – backend: POST /polls/launch
+// body: { question, options: string[], durationHours: number, isAnonymous: boolean }
+export async function createPoll(data) {
+  return apiRequest("/polls/launch", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// =====================================================
+// ANNOUNCEMENTS MODULE (AUTH REQUIRED)
+// =====================================================
+
+// Get all announcements
+export async function getAllAnnouncements() {
+  // GET /announcements/all -> [{ id, title, description, priority, createdAt }]
+  return apiRequest("/announcements/all");
+}
+
+// Create announcement (admin only) – backend: POST /announcements/publish
+// body: { title, content, category?, imageUrl?, isUrgent? }
+export async function createAnnouncement(data) {
+  return apiRequest("/announcements/publish", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+// =====================================================
 // COMPLAINT MODULE (AUTH REQUIRED)
 // =====================================================
 
@@ -221,9 +280,7 @@ export async function createComplaint(complaintData) {
 }
 
 export async function getAllComplaints(page = 0, size = 10) {
-  return apiRequest(
-    `/complaints/get-all-complaints?page=${page}&size=${size}`
-  );
+  return apiRequest(`/complaints/get-all-complaints?page=${page}&size=${size}`);
 }
 
 export async function getMyComplaints() {

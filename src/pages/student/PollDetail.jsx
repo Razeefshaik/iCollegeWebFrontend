@@ -1,64 +1,104 @@
-import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useState, useMemo } from "react";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import StudentNavbar from "../../components/layout/StudentNavbar";
 import StudentBottomNav from "../../components/layout/StudentBottomNav";
 import StudentFooter from "../../components/layout/StudentFooter";
+import { voteOnPoll } from "../../services/api";
 
 export default function PollDetail() {
   const navigate = useNavigate();
   const { id } = useParams();
-  const [selectedOption, setSelectedOption] = useState("opt1");
+  const location = useLocation();
+  const [submitting, setSubmitting] = useState(false);
+  const [poll, setPoll] = useState(location.state?.poll ?? null);
 
-  // Poll data - in a real app, this would be fetched based on the ID
-  const pollsDatabase = {
-    "1": {
-      id: "1",
-      question: "Should the student lounge be open 24/7 during finals week?",
-      activeUntil: "May 20, 2024",
-      options: [
-        { id: "opt1", label: "Yes, 24/7 access", votes: 850, percentage: 68 },
-        { id: "opt2", label: "Extended hours (6 AM - 2 AM)", votes: 320, percentage: 26 },
-        { id: "opt3", label: "Current hours are fine", votes: 70, percentage: 6 },
-      ],
-      totalVotes: 1240,
-    },
-    "2": {
-      id: "2",
-      question: "What should be the theme for the cultural fest?",
-      activeUntil: "May 15, 2024",
-      options: [
-        { id: "opt1", label: "Retro Bollywood", votes: 128, percentage: 45 },
-        { id: "opt2", label: "Futuristic Sci-Fi", votes: 28, percentage: 10 },
-        { id: "opt3", label: "Traditional Heritage", votes: 43, percentage: 15 },
-        { id: "opt4", label: "Neon Jungle", votes: 85, percentage: 30 },
-      ],
-      totalVotes: 284,
-    },
-    "3": {
-      id: "3",
-      question: "New automated lending machines for the Central Library?",
-      activeUntil: "May 18, 2024",
-      options: [
-        { id: "opt1", label: "Yes, install them", votes: 1684, percentage: 80 },
-        { id: "opt2", label: "No, keep current system", votes: 421, percentage: 20 },
-      ],
-      totalVotes: 2105,
-    },
-  };
+  const initialPoll = poll;
 
-  const pollData = pollsDatabase[id || "2"] || pollsDatabase["2"];
+  // Basic guard: if user hits this route directly without state, send back
+  if (!initialPoll) {
+    return (
+      <div className="bg-background-light dark:bg-background-dark min-h-screen font-display text-gray-800 dark:text-gray-200 flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Poll details are not available. Please open this page from the Opinion Polls list.
+          </p>
+          <button
+            onClick={() => navigate("/student/opinion-polls")}
+            className="px-4 py-2 rounded-xl bg-primary text-white text-sm font-semibold"
+          >
+            Back to Polls
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState(0);
+
+  // Map backend poll into view model (backend has voteCounts map, not votes array)
+  const pollData = useMemo(() => {
+    const options = Array.isArray(initialPoll.options) ? initialPoll.options : [];
+    const vc = initialPoll.voteCounts;
+    const votes = Array.isArray(initialPoll.votes)
+      ? initialPoll.votes
+      : options.map((_, i) => {
+          if (vc && typeof vc === "object") {
+            const n = vc[i] ?? vc[String(i)];
+            return Number(n ?? 0);
+          }
+          return 0;
+        });
+    const totalVotes =
+      typeof initialPoll.totalVotes === "number"
+        ? initialPoll.totalVotes
+        : votes.reduce((sum, v) => sum + v, 0);
+
+    const mappedOptions = options.map((label, index) => {
+      const voteCount = votes[index] ?? 0;
+      const percentage =
+        totalVotes > 0 ? Math.round((voteCount / totalVotes) * 100) : 0;
+      return {
+        id: `opt${index}`,
+        label: typeof label === "string" ? label : String(label),
+        votes: voteCount,
+        percentage,
+      };
+    });
+
+    const expires = initialPoll.expiresAt ? new Date(initialPoll.expiresAt) : null;
+    const activeUntil = expires && !Number.isNaN(expires.getTime())
+      ? expires.toLocaleString()
+      : "N/A";
+
+    return {
+      id: initialPoll.id,
+      question: initialPoll.question,
+      activeUntil,
+      options: mappedOptions,
+      totalVotes,
+    };
+  }, [initialPoll]);
 
   function handleBack() {
     navigate("/student/opinion-polls");
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    // Handle vote submission
-    console.log("Vote cast for:", selectedOption);
-    // In a real app, you would submit the vote to the backend
-    // For now, just show an alert or update the UI
-    alert(`Vote cast for: ${pollData.options.find(opt => opt.id === selectedOption)?.label}`);
+    if (submitting) return;
+
+    try {
+      setSubmitting(true);
+      const updated = await voteOnPoll(pollData.id, selectedOptionIndex);
+      if (updated && typeof updated === "object") {
+        setPoll(updated);
+      }
+      alert("Your vote has been recorded.");
+    } catch (err) {
+      alert(err.message || "Failed to submit vote");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // Sort options by votes (descending) for display
@@ -100,28 +140,28 @@ export default function PollDetail() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {pollData.options.map((option) => (
+              {pollData.options.map((option, index) => (
                 <div key={option.id} className="relative">
                   <input
                     type="radio"
                     id={option.id}
                     name="poll-option"
-                    value={option.id}
-                    checked={selectedOption === option.id}
-                    onChange={(e) => setSelectedOption(e.target.value)}
+                    value={index}
+                    checked={selectedOptionIndex === index}
+                    onChange={() => setSelectedOptionIndex(index)}
                     className="hidden custom-radio"
                   />
                   <label
                     htmlFor={option.id}
                     className={`flex items-center p-5 bg-white dark:bg-slate-800 border-2 rounded-xl cursor-pointer hover:border-primary/50 transition-all duration-200 shadow-sm ${
-                      selectedOption === option.id
+                      selectedOptionIndex === index
                         ? "border-primary bg-primary/5 dark:bg-primary/10"
                         : "border-slate-200 dark:border-slate-700"
                     }`}
                   >
                     <span
                       className={`w-6 h-6 rounded-full border-2 mr-4 flex-shrink-0 transition-all ${
-                        selectedOption === option.id
+                        selectedOptionIndex === index
                           ? "border-primary border-[5px]"
                           : "border-slate-300 dark:border-slate-600"
                       }`}
@@ -133,9 +173,10 @@ export default function PollDetail() {
 
               <button
                 type="submit"
-                className="w-full mt-8 py-4 bg-primary text-white font-bold text-lg rounded-xl shadow-lg shadow-primary/30 hover:bg-blue-700 active:scale-[0.98] transition-all"
+                disabled={submitting}
+                className="w-full mt-8 py-4 bg-primary text-white font-bold text-lg rounded-xl shadow-lg shadow-primary/30 hover:bg-blue-700 active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Cast Vote
+                {submitting ? "Submitting..." : "Cast Vote"}
               </button>
             </form>
           </section>
@@ -154,7 +195,8 @@ export default function PollDetail() {
 
             <div className="space-y-8">
               {sortedOptions.map((option, index) => {
-                const isSelected = selectedOption === option.id;
+                const selectedOption = pollData.options[selectedOptionIndex];
+                const isSelected = selectedOption && option.id === selectedOption.id;
                 const isLeading = index === 0;
                 const opacityClass = isLeading
                   ? "bg-primary"

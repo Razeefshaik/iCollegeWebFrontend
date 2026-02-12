@@ -67,12 +67,12 @@ export default function Complaints() {
         return;
       }
 
-      // Prepare complaint data
+      // Prepare complaint data – keep only fields that backend expects
       const complaintData = {
         title: form.title.trim(),
         description: form.description.trim(),
         category: backendCategory,
-        imageUrl: "placeholder-image-url", // Random string for now
+        anonymous: false,
       };
 
       // Log the request for debugging

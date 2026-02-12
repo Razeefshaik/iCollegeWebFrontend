@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { createPoll } from "../../services/api";
 
 export default function NewOpinionPoll() {
   const navigate = useNavigate();
@@ -11,6 +12,7 @@ export default function NewOpinionPoll() {
     anonymousResults: true,
     publicRealTimeCounts: false,
   });
+  const [submitting, setSubmitting] = useState(false);
 
   function handleClose() {
     navigate("/admin/dashboard");
@@ -40,9 +42,10 @@ export default function NewOpinionPoll() {
     setFormData({ ...formData, duration });
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    
+    if (submitting) return;
+
     // Validation
     if (!formData.question.trim()) {
       alert("Please enter a poll question");
@@ -59,10 +62,34 @@ export default function NewOpinionPoll() {
       return;
     }
 
-    // In a real app, submit to backend
-    console.log("Poll data:", formData);
-    alert("Poll launched successfully!");
-    navigate("/admin/dashboard");
+    try {
+      setSubmitting(true);
+
+      // Backend PollRequest: question, options, durationHours (int), isAnonymous
+      const durationHours =
+        formData.duration === "24h"
+          ? 24
+          : formData.duration === "3d"
+          ? 72
+          : formData.duration === "1w"
+          ? 168
+          : 24;
+
+      const payload = {
+        question: formData.question.trim(),
+        options: formData.choices.map((c) => c.trim()),
+        durationHours,
+        isAnonymous: formData.anonymousResults,
+      };
+
+      await createPoll(payload);
+      alert("Poll launched successfully!");
+      navigate("/admin/dashboard");
+    } catch (err) {
+      alert(err.message || "Failed to launch poll");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   function handleLaunch() {
@@ -83,9 +110,10 @@ export default function NewOpinionPoll() {
           <h1 className="text-xl font-bold text-white">New Opinion Poll</h1>
           <button
             onClick={handleLaunch}
-            className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition-colors"
+            disabled={submitting}
+            className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Launch
+            {submitting ? "Launching..." : "Launch"}
           </button>
         </div>
       </header>
@@ -272,9 +300,10 @@ export default function NewOpinionPoll() {
       <footer className="fixed bottom-0 left-0 right-0 bg-primary h-16 flex items-center justify-center z-40">
         <button
           onClick={handleLaunch}
-          className="flex items-center gap-2 px-8 py-3 bg-white text-primary font-bold rounded-xl hover:bg-white/90 active:scale-[0.98] transition-all shadow-lg"
+          disabled={submitting}
+          className="flex items-center gap-2 px-8 py-3 bg-white text-primary font-bold rounded-xl hover:bg-white/90 active:scale-[0.98] transition-all shadow-lg disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          Launch Poll
+          {submitting ? "Launching..." : "Launch Poll"}
           <span className="material-icons-outlined">send</span>
         </button>
       </footer>

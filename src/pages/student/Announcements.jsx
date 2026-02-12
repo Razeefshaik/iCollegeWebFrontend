@@ -1,19 +1,46 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import oneImage from "../../assets/images/one.png";
 import twoImage from "../../assets/images/two.png";
 import fiveImage from "../../assets/images/five.png";
+import { getAllAnnouncements } from "../../services/api";
 
 export default function Announcements() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [apiAnnouncements, setApiAnnouncements] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  function goToDetails(id) {
-    navigate(`/student/announcements/${id}`);
+  function goToDetails(announcement) {
+    const id = announcement?.id ?? announcement;
+    navigate(`/student/announcements/${id}`, { state: { announcement: typeof announcement === "object" ? announcement : undefined } });
   }
 
-  // Pinned announcement
-  const pinnedAnnouncement = {
+  // Backend: GET /announcements/all
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchAnnouncements() {
+      try {
+        const data = await getAllAnnouncements();
+        if (!isMounted) return;
+        setApiAnnouncements(Array.isArray(data) ? data : []);
+      } catch (err) {
+        // Keep existing mock UI as graceful fallback
+        console.error("Failed to load announcements:", err);
+        if (isMounted) setError(err.message || "Failed to load announcements");
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    }
+    fetchAnnouncements();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // --- MOCK FALLBACK DATA (used only if API fails or returns empty) ---
+  const fallbackPinned = {
     id: 1,
     category: "GENERAL",
     isImportant: true,
@@ -24,8 +51,7 @@ export default function Announcements() {
     image: oneImage,
   };
 
-  // Recent announcements
-  const allAnnouncements = [
+  const fallbackAnnouncements = [
     {
       id: 2,
       category: "Sports",
@@ -68,14 +94,74 @@ export default function Announcements() {
     },
   ];
 
+  function formatTimeAgo(dateString) {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+
+    if (Number.isNaN(diffInSeconds)) return "";
+    if (diffInSeconds < 60) return "just now";
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    return date.toLocaleDateString();
+  }
+
+  function mapPriorityToCategory(priority) {
+    switch (priority) {
+      case "HIGH":
+        return { category: "HIGH PRIORITY", categoryColor: "red" };
+      case "LOW":
+        return { category: "LOW PRIORITY", categoryColor: "emerald" };
+      case "MEDIUM":
+      default:
+        return { category: "MEDIUM PRIORITY", categoryColor: "amber" };
+    }
+  }
+
+  // Transform backend data into UI shape (backend returns content, category, isUrgent)
+  const transformedFromApi = (apiAnnouncements || []).map((a) => {
+    const priority = a.isUrgent ? "HIGH" : "MEDIUM";
+    const { category, categoryColor } = mapPriorityToCategory(priority);
+    return {
+      id: a.id,
+      category: a.category || category,
+      categoryColor,
+      timestamp: formatTimeAgo(a.createdAt),
+      title: a.title,
+      description: a.description || a.content || "",
+      content: a.content || a.description || "",
+      image: a.imageUrl || null,
+      icon: "campaign",
+      priority,
+      adminName: a.adminName || null,
+      createdAt: a.createdAt,
+    };
+  });
+
+  // Use API data when loaded and non-empty; only use fallback when done loading and API returned empty
+  const hasBackend = !loading && transformedFromApi.length > 0;
+  const allAnnouncements = loading ? [] : (transformedFromApi.length > 0 ? transformedFromApi : fallbackAnnouncements);
+
+  // Pinned: highest priority or fallback pinned (only when we have backend data)
+  let pinnedAnnouncement = fallbackPinned;
+  if (hasBackend) {
+    const highPriority = transformedFromApi.find(
+      (a) => a.priority === "HIGH"
+    );
+    pinnedAnnouncement = highPriority || transformedFromApi[0] || fallbackPinned;
+  }
+
   const filteredAnnouncements = useMemo(() => {
-    if (!searchQuery.trim()) return allAnnouncements;
+    const source = allAnnouncements;
+    if (!searchQuery.trim()) return source;
     const query = searchQuery.toLowerCase();
-    return allAnnouncements.filter(
+    return source.filter(
       (ann) =>
         ann.title.toLowerCase().includes(query) ||
         ann.description.toLowerCase().includes(query) ||
-        ann.category.toLowerCase().includes(query)
+        (ann.category || "").toLowerCase().includes(query)
     );
   }, [searchQuery, allAnnouncements]);
 
@@ -145,7 +231,10 @@ export default function Announcements() {
         {/* --- PINNED SECTION --- */}
         <section className="mb-10">
           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4">Pinned</h3>
-          <div className="relative w-full h-80 md:h-[400px] rounded-2xl overflow-hidden shadow-lg group cursor-pointer" onClick={() => goToDetails(pinnedAnnouncement.id)}>
+          {loading ? (
+            <div className="relative w-full h-80 md:h-[400px] rounded-2xl overflow-hidden shadow-lg bg-slate-200 dark:bg-slate-700 animate-pulse" />
+          ) : (
+          <div className="relative w-full h-80 md:h-[400px] rounded-2xl overflow-hidden shadow-lg group cursor-pointer" onClick={() => goToDetails(pinnedAnnouncement)}>
             <img src={pinnedAnnouncement.image} className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" alt="" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/20"></div>
             <div className="absolute inset-0 p-6 md:p-10 flex flex-col justify-between">
@@ -164,14 +253,27 @@ export default function Announcements() {
               </div>
             </div>
           </div>
+          )}
         </section>
 
         {/* --- GRID SECTION --- */}
         <section>
           <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-6">Recent Updates</h3>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 border border-slate-100 dark:border-slate-700 h-full animate-pulse">
+                  <div className="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/4 mb-3" />
+                  <div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-full mb-2" />
+                  <div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4 mb-4" />
+                  <div className="h-40 bg-slate-200 dark:bg-slate-700 rounded-xl mt-auto" />
+                </div>
+              ))}
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredAnnouncements.map((ann) => (
-              <div key={ann.id} onClick={() => goToDetails(ann.id)} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 border border-slate-100 dark:border-slate-700 flex flex-col h-full group cursor-pointer hover:shadow-md transition-all">
+              <div key={ann.id} onClick={() => goToDetails(ann)} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm p-5 border border-slate-100 dark:border-slate-700 flex flex-col h-full group cursor-pointer hover:shadow-md transition-all">
                 <div className="flex items-center gap-2 mb-3">
                   <span className="text-xs font-bold text-[#EF231C] uppercase">{ann.category}</span>
                   <span className="text-slate-400 text-xs">• {ann.timestamp}</span>
@@ -190,6 +292,7 @@ export default function Announcements() {
               </div>
             ))}
           </div>
+          )}
         </section>
       </main>
 
